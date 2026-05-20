@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // USERS collection:
+    // A user can only read and write their own profile document.
+    // The document ID is the user's own Firebase Auth UID.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // TRANSACTIONS collection:
+    // A user can only create a transaction where the userId field matches their own UID.
+    // A user can only read, update, or delete a transaction that already belongs to them.
+    match /transactions/{transactionId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // GOALS collection:
+    // A user can only read and write their own savings goals.
+    match /goals/{goalId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+  }
+}
+

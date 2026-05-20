@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.pbd.ui.screens.home.HomeScreen
 import com.example.pbd.ui.screens.auth.LoginScreen
 import com.example.pbd.ui.screens.auth.RegisterScreen
 import com.example.pbd.ui.screens.dashboard.DashboardScreen
@@ -14,14 +15,16 @@ import com.example.pbd.ui.screens.income.AddIncomeScreen
 import com.example.pbd.ui.screens.expense.AddExpenseScreen
 import com.example.pbd.ui.screens.profile.ProfileScreen
 import com.example.pbd.ui.screens.transactions.TransactionHistoryScreen
-import com.group.pbd.navigation.Screen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = Screen.Home.route
     ) {
+        composable(Screen.Home.route) {
+            HomeScreen(navController = navController)
+        }
         composable(Screen.Login.route) {
             LoginScreen(navController = navController)
         }
