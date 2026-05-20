@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
@@ -103,6 +104,23 @@ fun HomeScreen(navController: NavHostController) {
                     iconBg = Brush.linearGradient(listOf(AccentOrange, Color(0xFFFF5722))),
                     onClick = { navController.navigate(Screen.AddExpense.route) }
                 )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                QuickActionCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.AttachMoney,
+                    label = "Add Income",
+                    description = "Record a new income entry",
+                    iconBg = Brush.linearGradient(listOf(AccentGreen, AccentBlue)),
+                    onClick = { navController.navigate(Screen.AddIncome.route) }
+                )
+                Spacer(modifier = Modifier.weight(1f))
             }
 
             Spacer(Modifier.height(28.dp))
