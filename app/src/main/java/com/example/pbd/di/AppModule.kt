@@ -1,5 +1,7 @@
 package com.example.pbd.di
 
+import com.example.pbd.data.repository.AuthRepository
+import com.example.pbd.data.repository.AuthRepositoryImpl
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.dsl.module
@@ -9,5 +11,7 @@ val appModule = module {
     single { FirebaseAuth.getInstance() }
     single { FirebaseFirestore.getInstance() }
     
-    // Later, we will add repository and viewmodel setups here
+    // Repositories
+    single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
 }
+
