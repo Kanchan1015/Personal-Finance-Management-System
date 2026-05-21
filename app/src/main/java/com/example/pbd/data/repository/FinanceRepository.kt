@@ -1,7 +1,10 @@
 package com.example.pbd.data.repository
 
 import com.example.pbd.data.local.TransactionDao
+import com.example.pbd.data.local.RecurringExpenseDao
 import com.example.pbd.data.model.Transaction
+import com.example.pbd.data.model.RecurringExpense
+import com.example.pbd.data.model.TransactionType
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +14,7 @@ import kotlinx.coroutines.tasks.await
 
 class FinanceRepository(
     private val transactionDao: TransactionDao,
+    private val recurringExpenseDao: RecurringExpenseDao,
     private val firestore: FirebaseFirestore
 ) {
     // Exposes a live stream of all transactions from Room
@@ -68,6 +72,53 @@ class FinanceRepository(
             .document(transaction.id)
             .set(firestoreData)
             .await()
+    }
+
+    // Exposes a stream of all recurring templates
+    val allRecurringExpenses: Flow<List<RecurringExpense>> = recurringExpenseDao.getAllRecurringExpenses()
+
+    // Saves a new recurring expense template to local Room
+    suspend fun saveRecurringExpense(recurringExpense: RecurringExpense) {
+        recurringExpenseDao.insertRecurringExpense(recurringExpense)
+    }
+
+    // Called by Periodic WorkManager task to auto-log due transactions
+    suspend fun checkAndProcessRecurringExpenses() {
+        val activeExpenses = recurringExpenseDao.getActiveRecurringExpenses()
+        val now = System.currentTimeMillis()
+
+        activeExpenses.forEach { recurring ->
+            if (recurring.nextExecutionDate <= now) {
+                // Time to auto-log a new transaction!
+                val autoTransaction = Transaction(
+                    userId = recurring.userId,
+                    type = TransactionType.EXPENSE,
+                    amount = recurring.amount,
+                    currency = "LKR",
+                    exchangeRate = 1.0,
+                    baseAmountLKR = recurring.amount,
+                    category = recurring.category,
+                    subCategory = recurring.subCategory,
+                    note = "${recurring.note} (Auto-logged)",
+                    timestamp = recurring.nextExecutionDate
+                )
+
+                // Save locally and push to Firestore
+                saveTransaction(autoTransaction)
+
+                // Calculate next execution date
+                val cal = java.util.Calendar.getInstance()
+                cal.timeInMillis = recurring.nextExecutionDate
+                if (recurring.interval == "WEEKLY") {
+                    cal.add(java.util.Calendar.DAY_OF_YEAR, 7)
+                } else {
+                    cal.add(java.util.Calendar.MONTH, 1)
+                }
+
+                // Update next execution date in local DB
+                recurringExpenseDao.updateNextExecutionDate(recurring.id, cal.timeInMillis)
+            }
+        }
     }
 }
 
