@@ -3,6 +3,7 @@ package com.example.pbd
 import android.app.Application
 import androidx.work.*
 import com.example.pbd.data.worker.SyncWorker
+import com.example.pbd.data.worker.RecurringExpenseWorker
 import java.util.concurrent.TimeUnit
 
 class PbdApplication : Application() {
@@ -10,6 +11,7 @@ class PbdApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         setupSyncWorker()
+        setupRecurringExpenseWorker()
     }
 
     private fun setupSyncWorker() {
@@ -25,6 +27,17 @@ class PbdApplication : Application() {
             "SyncWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             syncRequest
+        )
+    }
+
+    private fun setupRecurringExpenseWorker() {
+        val recurringRequest = PeriodicWorkRequestBuilder<RecurringExpenseWorker>(12, TimeUnit.HOURS)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "RecurringExpenseWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            recurringRequest
         )
     }
 }
