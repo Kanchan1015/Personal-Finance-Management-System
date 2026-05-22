@@ -1,5 +1,6 @@
 package com.example.pbd.ui.screens.income
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,12 +24,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,13 +42,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.ui.theme.PBDTheme
 
 private val DarkBackground = Color(0xFF1C1C2E)
@@ -59,19 +66,52 @@ private val incomeCurrencies = listOf("LKR", "USD", "USDT")
 private val incomeTypes = listOf("Salary", "Freelance", "Crypto")
 
 @Composable
-fun AddIncomeScreen(navController: NavHostController) {
+fun AddIncomeScreen(
+    navController: NavHostController,
+    viewModel: IncomeViewModel = viewModel(
+        factory = IncomeViewModelFactory(
+            LocalContext.current.applicationContext as Application
+        )
+    )
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            android.widget.Toast.makeText(
+                context,
+                "Income added successfully!",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            navController.popBackStack()
+            viewModel.resetState()
+        }
+    }
+
     AddIncomeScreenContent(
-        onClose = { navController.popBackStack() }
+        uiState = uiState,
+        onClose = { navController.popBackStack() },
+        onSaveIncome = { amount, currency, incomeType ->
+            viewModel.saveIncome(
+                amount = amount,
+                currency = currency,
+                category = incomeType.toTransactionCategory()
+            )
+        }
     )
 }
 
 @Composable
 private fun AddIncomeScreenContent(
-    onClose: () -> Unit = {}
+    uiState: IncomeUiState = IncomeUiState(),
+    onClose: () -> Unit = {},
+    onSaveIncome: (amount: Double, currency: String, incomeType: String) -> Unit = { _, _, _ -> }
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCurrency by remember { mutableStateOf(incomeCurrencies.first()) }
     var selectedIncomeType by remember { mutableStateOf(incomeTypes.first()) }
+    val isLoading = uiState.isLoading
 
     Box(
         modifier = Modifier
@@ -122,11 +162,28 @@ private fun AddIncomeScreenContent(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            val isEnabled = amount.isNotEmpty() && amount != "."
+            if (uiState.errorMessage != null) {
+                Text(
+                    text = uiState.errorMessage,
+                    color = Color(0xFFFF6B6B),
+                    fontSize = 14.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            val isEnabled = !isLoading && amount.isNotEmpty() && amount != "."
 
             PrimaryActionButton(
                 text = "Save Income",
-                enabled = isEnabled
+                enabled = isEnabled,
+                isLoading = isLoading,
+                onClick = {
+                    val amountValue = amount.toDoubleOrNull() ?: 0.0
+                    if (amountValue > 0) {
+                        onSaveIncome(amountValue, selectedCurrency, selectedIncomeType)
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -279,7 +336,9 @@ private fun SelectionField(
 @Composable
 private fun PrimaryActionButton(
     text: String,
-    enabled: Boolean
+    enabled: Boolean,
+    isLoading: Boolean,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -293,15 +352,32 @@ private fun PrimaryActionButton(
                     Brush.horizontalGradient(listOf(DarkCard, DarkCard))
                 }
             )
-            .clickable(enabled = enabled) {},
+            .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = text,
-            color = if (enabled) WhiteText else LabelGray,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = WhiteText,
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = text,
+                color = if (enabled) WhiteText else LabelGray,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+private fun String.toTransactionCategory(): TransactionCategory {
+    return when (this) {
+        "Salary" -> TransactionCategory.SALARY
+        "Freelance" -> TransactionCategory.FREELANCE
+        "Crypto" -> TransactionCategory.CRYPTO
+        else -> TransactionCategory.SALARY
     }
 }
 
