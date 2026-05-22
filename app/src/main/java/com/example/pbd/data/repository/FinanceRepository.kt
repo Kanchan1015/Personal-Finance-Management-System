@@ -5,6 +5,7 @@ import com.example.pbd.data.model.Transaction
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -15,6 +16,11 @@ class FinanceRepository(
 ) {
     // Exposes a live stream of all transactions from Room
     val allTransactions: Flow<List<Transaction>> = transactionDao.getAllTransactions()
+
+    suspend fun saveIncome(transaction: Transaction): Result<Unit> {
+        delay(500)
+        return Result.success(Unit)
+    }
 
     suspend fun saveTransaction(transaction: Transaction) {
         // Step 1: Always save to the local Room database first.
@@ -70,4 +76,3 @@ class FinanceRepository(
             .await()
     }
 }
-
