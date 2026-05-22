@@ -1,7 +1,10 @@
 package com.example.pbd.data.repository
 
 import com.example.pbd.data.local.TransactionDao
+import com.example.pbd.data.model.ExchangeRateResponse
 import com.example.pbd.data.model.Transaction
+import com.example.pbd.data.remote.ExchangeRateApi
+import com.example.pbd.data.remote.RetrofitClient
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,12 +17,39 @@ class FinanceRepository(
     private val transactionDao: TransactionDao,
     private val firestore: FirebaseFirestore
 ) {
+    private val exchangeRateApi: ExchangeRateApi = RetrofitClient.exchangeRateApi
+
     // Exposes a live stream of all transactions from Room
     val allTransactions: Flow<List<Transaction>> = transactionDao.getAllTransactions()
 
     suspend fun saveIncome(transaction: Transaction): Result<Unit> {
         delay(500)
         return Result.success(Unit)
+    }
+
+    suspend fun getExchangeRate(baseCurrency: String): Result<Double> {
+        return try {
+            val response: ExchangeRateResponse = exchangeRateApi.getLatestExchangeRates(
+                baseCurrency = baseCurrency.uppercase()
+            )
+
+            if (response.result.lowercase() != "success") {
+                Result.failure(
+                    IllegalStateException("Exchange rate API returned '${response.result}'")
+                )
+            } else {
+                val lkrRate = response.rates["LKR"]
+                if (lkrRate != null) {
+                    Result.success(lkrRate)
+                } else {
+                    Result.failure(
+                        IllegalStateException("LKR exchange rate not found for ${response.baseCode}")
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun saveTransaction(transaction: Transaction) {
