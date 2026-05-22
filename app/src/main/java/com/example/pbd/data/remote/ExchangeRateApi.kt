@@ -1,5 +1,6 @@
 package com.example.pbd.data.remote
 
+import com.example.pbd.data.model.ExchangeRateResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 
@@ -10,7 +11,3 @@ interface ExchangeRateApi {
         @Path("baseCurrency") baseCurrency: String
     ): ExchangeRateResponse
 }
-
-data class ExchangeRateResponse(
-    val rates: Map<String, Double> = emptyMap()
-)
