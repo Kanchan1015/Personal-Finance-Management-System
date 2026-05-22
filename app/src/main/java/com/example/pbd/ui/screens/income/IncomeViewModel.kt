@@ -1,6 +1,7 @@
 package com.example.pbd.ui.screens.income
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class IncomeViewModel(application: Application) : AndroidViewModel(application) {
+    private companion object {
+        const val TAG = "IncomeViewModel"
+    }
 
     private val repository: FinanceRepository = FinanceRepository(
         transactionDao = AppDatabase.getDatabase(application).transactionDao(),
@@ -26,15 +30,105 @@ class IncomeViewModel(application: Application) : AndroidViewModel(application) 
     private val _uiState = MutableStateFlow(IncomeUiState())
     val uiState: StateFlow<IncomeUiState> = _uiState.asStateFlow()
 
+    fun fetchExchangeRate(amount: Double, currency: String) {
+        Log.d(TAG, "fetchExchangeRate requestedCurrency=$currency, amount=$amount")
+
+        if (amount <= 0.0) {
+            _uiState.value = _uiState.value.copy(
+                exchangeRate = 1.0,
+                convertedAmountLKR = 0.0,
+                isExchangeRateLoading = false,
+                exchangeRateErrorMessage = "Enter a valid amount"
+            )
+            Log.d(TAG, "fetchExchangeRate invalidAmount state=${_uiState.value}")
+            return
+        }
+
+        if (currency.uppercase() == "LKR") {
+            _uiState.value = _uiState.value.copy(
+                exchangeRate = 1.0,
+                convertedAmountLKR = amount,
+                isExchangeRateLoading = false,
+                exchangeRateErrorMessage = null
+            )
+            Log.d(TAG, "fetchExchangeRate localCurrency state=${_uiState.value}")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isExchangeRateLoading = true,
+                exchangeRateErrorMessage = null
+            )
+            Log.d(TAG, "fetchExchangeRate loadingState=${_uiState.value}")
+
+            val result = repository.getExchangeRate(currency)
+            Log.d(TAG, "fetchExchangeRate repositoryResult=$result")
+
+            result
+                .onSuccess { rate ->
+                    val convertedAmountLKR = amount * rate
+                    _uiState.value = _uiState.value.copy(
+                        exchangeRate = rate,
+                        convertedAmountLKR = convertedAmountLKR,
+                        isExchangeRateLoading = false,
+                        exchangeRateErrorMessage = null
+                    )
+                    Log.d(
+                        TAG,
+                        "fetchExchangeRate success rate=$rate, convertedAmountLKR=$convertedAmountLKR, state=${_uiState.value}"
+                    )
+                }
+                .onFailure { throwable ->
+                    _uiState.value = _uiState.value.copy(
+                        exchangeRate = 1.0,
+                        convertedAmountLKR = 0.0,
+                        isExchangeRateLoading = false,
+                        exchangeRateErrorMessage = throwable.message ?: "Unable to fetch exchange rate"
+                    )
+                    Log.e(TAG, "fetchExchangeRate failure state=${_uiState.value}", throwable)
+                }
+        }
+    }
+
     fun saveIncome(
         amount: Double,
         currency: String,
-        category: TransactionCategory,
-        exchangeRate: Double = 1.0,
-        baseAmountLKR: Double = amount
+        category: TransactionCategory
     ) {
+        if (amount <= 0.0) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Enter a valid amount"
+            )
+            return
+        }
+
         viewModelScope.launch {
-            _uiState.value = IncomeUiState(isLoading = true)
+            val currentState = _uiState.value
+            val resolvedExchangeRate = if (currency.uppercase() == "LKR") {
+                1.0
+            } else {
+                currentState.exchangeRate
+            }
+            val resolvedBaseAmountLKR = if (currency.uppercase() == "LKR") {
+                amount
+            } else {
+                currentState.convertedAmountLKR
+            }
+
+            if (currency.uppercase() != "LKR" && resolvedBaseAmountLKR <= 0.0) {
+                _uiState.value = currentState.copy(
+                    errorMessage = currentState.exchangeRateErrorMessage
+                        ?: "Exchange rate is unavailable for $currency"
+                )
+                return@launch
+            }
+
+            _uiState.value = currentState.copy(
+                isLoading = true,
+                isSuccess = false,
+                errorMessage = null
+            )
 
             try {
                 val incomeTransaction = Transaction(
@@ -42,22 +136,30 @@ class IncomeViewModel(application: Application) : AndroidViewModel(application) 
                     type = TransactionType.INCOME,
                     amount = amount,
                     currency = currency,
-                    exchangeRate = exchangeRate,
-                    baseAmountLKR = baseAmountLKR,
+                    exchangeRate = resolvedExchangeRate,
+                    baseAmountLKR = resolvedBaseAmountLKR,
                     category = category
                 )
 
                 repository.saveIncome(incomeTransaction)
                     .onSuccess {
-                        _uiState.value = IncomeUiState(isSuccess = true)
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            isSuccess = true,
+                            errorMessage = null
+                        )
                     }
                     .onFailure { throwable ->
-                        _uiState.value = IncomeUiState(
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            isSuccess = false,
                             errorMessage = throwable.message ?: "Something went wrong"
                         )
                     }
             } catch (e: Exception) {
-                _uiState.value = IncomeUiState(
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isSuccess = false,
                     errorMessage = e.message ?: "Something went wrong"
                 )
             }

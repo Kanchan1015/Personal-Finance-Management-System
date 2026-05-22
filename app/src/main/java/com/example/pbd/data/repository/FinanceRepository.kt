@@ -1,5 +1,6 @@
 package com.example.pbd.data.repository
 
+import android.util.Log
 import com.example.pbd.data.local.TransactionDao
 import com.example.pbd.data.model.ExchangeRateResponse
 import com.example.pbd.data.model.Transaction
@@ -17,6 +18,10 @@ class FinanceRepository(
     private val transactionDao: TransactionDao,
     private val firestore: FirebaseFirestore
 ) {
+    private companion object {
+        const val TAG = "FinanceRepository"
+    }
+
     private val exchangeRateApi: ExchangeRateApi = RetrofitClient.exchangeRateApi
 
     // Exposes a live stream of all transactions from Room
@@ -29,25 +34,39 @@ class FinanceRepository(
 
     suspend fun getExchangeRate(baseCurrency: String): Result<Double> {
         return try {
+            val normalizedCurrency = baseCurrency.uppercase()
+            Log.d(TAG, "getExchangeRate requestedCurrency=$normalizedCurrency")
+
             val response: ExchangeRateResponse = exchangeRateApi.getLatestExchangeRates(
-                baseCurrency = baseCurrency.uppercase()
+                baseCurrency = normalizedCurrency
+            )
+            Log.d(
+                TAG,
+                "getExchangeRate apiResult=${response.result}, baseCode=${response.baseCode}, lkrRate=${response.rates["LKR"]}"
             )
 
             if (response.result.lowercase() != "success") {
-                Result.failure(
+                val result = Result.failure<Double>(
                     IllegalStateException("Exchange rate API returned '${response.result}'")
                 )
+                Log.d(TAG, "getExchangeRate returningResult=$result")
+                result
             } else {
                 val lkrRate = response.rates["LKR"]
                 if (lkrRate != null) {
-                    Result.success(lkrRate)
+                    val result = Result.success(lkrRate)
+                    Log.d(TAG, "getExchangeRate returningResult=$result")
+                    result
                 } else {
-                    Result.failure(
+                    val result = Result.failure<Double>(
                         IllegalStateException("LKR exchange rate not found for ${response.baseCode}")
                     )
+                    Log.d(TAG, "getExchangeRate returningResult=$result")
+                    result
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "getExchangeRate failed for currency=$baseCurrency", e)
             Result.failure(e)
         }
     }
