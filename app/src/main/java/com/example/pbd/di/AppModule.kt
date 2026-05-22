@@ -2,8 +2,10 @@ package com.example.pbd.di
 
 import com.example.pbd.data.repository.AuthRepository
 import com.example.pbd.data.repository.AuthRepositoryImpl
+import com.example.pbd.ui.screens.auth.AuthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
@@ -13,5 +15,9 @@ val appModule = module {
     
     // Repositories
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
+    
+    // ViewModels
+    viewModel { AuthViewModel(get()) }
 }
+
 
