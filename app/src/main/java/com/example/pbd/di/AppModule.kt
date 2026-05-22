@@ -3,6 +3,7 @@ package com.example.pbd.di
 import com.example.pbd.data.repository.AuthRepository
 import com.example.pbd.data.repository.AuthRepositoryImpl
 import com.example.pbd.ui.screens.auth.AuthViewModel
+import com.example.pbd.ui.screens.profile.ProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -18,6 +19,8 @@ val appModule = module {
     
     // ViewModels
     viewModel { AuthViewModel(get()) }
+    viewModel { ProfileViewModel(get()) }
 }
+
 
 
