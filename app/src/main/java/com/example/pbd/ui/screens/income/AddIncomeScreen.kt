@@ -92,6 +92,12 @@ fun AddIncomeScreen(
     AddIncomeScreenContent(
         uiState = uiState,
         onClose = { navController.popBackStack() },
+        onFetchExchangeRate = { amount, currency ->
+            viewModel.fetchExchangeRate(
+                amount = amount,
+                currency = currency
+            )
+        },
         onSaveIncome = { amount, currency, incomeType ->
             viewModel.saveIncome(
                 amount = amount,
@@ -106,12 +112,20 @@ fun AddIncomeScreen(
 private fun AddIncomeScreenContent(
     uiState: IncomeUiState = IncomeUiState(),
     onClose: () -> Unit = {},
+    onFetchExchangeRate: (amount: Double, currency: String) -> Unit = { _, _ -> },
     onSaveIncome: (amount: Double, currency: String, incomeType: String) -> Unit = { _, _, _ -> }
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCurrency by remember { mutableStateOf(incomeCurrencies.first()) }
     var selectedIncomeType by remember { mutableStateOf(incomeTypes.first()) }
     val isLoading = uiState.isLoading
+    val amountValue = amount.toDoubleOrNull()
+
+    LaunchedEffect(amount, selectedCurrency) {
+        if (amountValue != null && amountValue > 0.0) {
+            onFetchExchangeRate(amountValue, selectedCurrency)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -160,6 +174,14 @@ private fun AddIncomeScreenContent(
                 onValueSelected = { selectedIncomeType = it }
             )
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            ConversionPreviewCard(
+                amount = amountValue,
+                currency = selectedCurrency,
+                uiState = uiState
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             if (uiState.errorMessage != null) {
@@ -172,21 +194,95 @@ private fun AddIncomeScreenContent(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            val isEnabled = !isLoading && amount.isNotEmpty() && amount != "."
+            val hasValidAmount = amountValue != null && amountValue > 0.0
+            val hasResolvedConversion = selectedCurrency == "LKR" || uiState.convertedAmountLKR > 0.0
+            val isEnabled = !isLoading &&
+                !uiState.isExchangeRateLoading &&
+                hasValidAmount &&
+                hasResolvedConversion
 
             PrimaryActionButton(
                 text = "Save Income",
                 enabled = isEnabled,
                 isLoading = isLoading,
                 onClick = {
-                    val amountValue = amount.toDoubleOrNull() ?: 0.0
-                    if (amountValue > 0) {
+                    if (amountValue != null && amountValue > 0.0) {
                         onSaveIncome(amountValue, selectedCurrency, selectedIncomeType)
                     }
                 }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun ConversionPreviewCard(
+    amount: Double?,
+    currency: String,
+    uiState: IncomeUiState
+) {
+    if (amount == null || amount <= 0.0) {
+        return
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(DarkCard)
+            .border(1.dp, DarkBorder, RoundedCornerShape(16.dp))
+            .padding(16.dp)
+    ) {
+        when {
+            uiState.isExchangeRateLoading -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = WhiteText,
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Fetching live exchange rate...",
+                        color = LabelGray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            uiState.exchangeRateErrorMessage != null -> {
+                Text(
+                    text = uiState.exchangeRateErrorMessage,
+                    color = Color(0xFFFF6B6B),
+                    fontSize = 14.sp
+                )
+            }
+
+            else -> {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "${formatAmount(amount)} $currency \u2248 ${formatAmount(uiState.convertedAmountLKR)} LKR",
+                        color = WhiteText,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (currency == "LKR") {
+                            "Direct local currency entry"
+                        } else {
+                            "1 $currency = ${formatAmount(uiState.exchangeRate)} LKR"
+                        },
+                        color = LabelGray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -378,6 +474,14 @@ private fun String.toTransactionCategory(): TransactionCategory {
         "Freelance" -> TransactionCategory.FREELANCE
         "Crypto" -> TransactionCategory.CRYPTO
         else -> TransactionCategory.SALARY
+    }
+}
+
+private fun formatAmount(value: Double): String {
+    return if (value % 1.0 == 0.0) {
+        value.toLong().toString()
+    } else {
+        String.format("%.2f", value)
     }
 }
 
