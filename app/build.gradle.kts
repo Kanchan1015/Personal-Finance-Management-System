@@ -77,6 +77,10 @@ dependencies {
     // WorkManager
     implementation(libs.work.runtime)
 
+    // Networking
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.gson.converter)
+
     testImplementation(libs.junit)
 
     debugImplementation(libs.compose.ui.tooling)
