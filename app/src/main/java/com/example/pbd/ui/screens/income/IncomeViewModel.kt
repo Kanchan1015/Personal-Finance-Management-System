@@ -11,6 +11,7 @@ import com.example.pbd.data.model.Transaction
 import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.FinanceRepository
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -130,9 +131,19 @@ class IncomeViewModel(application: Application) : AndroidViewModel(application) 
                 errorMessage = null
             )
 
+            // Get the real Firebase Auth UID — the auth guard guarantees this is non-null
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            if (userId == null) {
+                _uiState.value = currentState.copy(
+                    isLoading = false,
+                    errorMessage = "You must be logged in to save income."
+                )
+                return@launch
+            }
+
             try {
                 val incomeTransaction = Transaction(
-                    userId = "",
+                    userId = userId,
                     type = TransactionType.INCOME,
                     amount = amount,
                     currency = currency,
