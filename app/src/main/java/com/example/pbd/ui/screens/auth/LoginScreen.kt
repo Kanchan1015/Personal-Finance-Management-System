@@ -30,9 +30,9 @@ fun LoginScreen(
         when (authState) {
             is AuthState.Success -> {
                 viewModel.resetState() // Prevent re-triggering
-                // Navigate to home and remove login/register from the backstack
+                // Navigate to Home and clear the entire auth flow (Splash → Login) from the back stack
                 navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
+                    popUpTo(Screen.Splash.route) { inclusive = true }
                 }
             }
             is AuthState.Error -> {
