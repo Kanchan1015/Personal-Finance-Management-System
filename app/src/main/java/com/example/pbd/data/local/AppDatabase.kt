@@ -6,14 +6,17 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.pbd.data.model.Transaction
+import com.example.pbd.data.model.RecurringExpense
 
 // Version must be bumped every time the database schema changes (e.g., adding new columns).
 // v1 → v2: added 'exchangeRate' and 'baseAmountLKR'
 // v2 → v3: added 'subCategory' for UI display labels
-@Database(entities = [Transaction::class], version = 3, exportSchema = false)
+// v3 → v4: added 'recurring_expenses' table
+@Database(entities = [Transaction::class, RecurringExpense::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
+    abstract fun recurringExpenseDao(): RecurringExpenseDao
 
     companion object {
         @Volatile
@@ -36,4 +39,3 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
-
