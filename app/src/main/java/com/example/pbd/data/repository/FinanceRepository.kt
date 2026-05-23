@@ -146,14 +146,20 @@ class FinanceRepository(
     }
 
     // Called by RecurringExpenseWorker every 12 hours to auto-log any due expenses
+    // Called by RecurringExpenseWorker every 12 hours to auto-log any due expenses
     suspend fun checkAndProcessRecurringExpenses() {
         val activeExpenses = recurringExpenseDao.getActiveRecurringExpenses()
         val now = System.currentTimeMillis()
 
         activeExpenses.forEach { recurring ->
-            if (recurring.nextExecutionDate <= now) {
-                // Time to auto-log a new transaction
+            var nextExecution = recurring.nextExecutionDate
+            val cal = java.util.Calendar.getInstance()
+
+            // Catch up in case the worker didn't run for multiple cycles.
+            while (nextExecution <= now) {
                 val autoTransaction = Transaction(
+                    // Deterministic ID prevents duplicates if this occurrence is retried.
+                    id = "${recurring.id}:$nextExecution",
                     userId = recurring.userId,
                     type = TransactionType.EXPENSE,
                     amount = recurring.amount,
@@ -162,21 +168,29 @@ class FinanceRepository(
                     baseAmountLKR = recurring.amount,
                     category = recurring.category,
                     subCategory = recurring.subCategory,
-                    note = "${recurring.note} (Auto-logged)"
+                    note = if (recurring.note.isBlank()) "Auto-logged" else "${recurring.note} (Auto-logged)",
+                    // Record the scheduled execution time rather than 'now'.
+                    timestamp = nextExecution
                 )
 
                 saveTransaction(autoTransaction)
 
-                // Advance the next execution date
-                val cal = java.util.Calendar.getInstance()
-                cal.timeInMillis = recurring.nextExecutionDate
+                // Advance to the next scheduled execution
+                cal.timeInMillis = nextExecution
                 if (recurring.interval == "WEEKLY") {
                     cal.add(java.util.Calendar.DAY_OF_YEAR, 7)
                 } else {
                     cal.add(java.util.Calendar.MONTH, 1)
                 }
-                recurringExpenseDao.updateNextExecutionDate(recurring.id, cal.timeInMillis)
+                nextExecution = cal.timeInMillis
             }
+
+            // Persist the next due date only if it changed
+            if (nextExecution != recurring.nextExecutionDate) {
+                recurringExpenseDao.updateNextExecutionDate(recurring.id, nextExecution)
+            }
+        }
+    }
         }
     }
 }
