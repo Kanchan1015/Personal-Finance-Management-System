@@ -10,10 +10,10 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-class DashboardRepository {
-
-    private val firestore = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
+class DashboardRepository(
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
+) {
 
     private val userId get() = auth.currentUser?.uid ?: ""
 
