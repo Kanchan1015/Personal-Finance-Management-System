@@ -15,8 +15,9 @@ class SyncWorker(
     override suspend fun doWork(): Result {
         val database = AppDatabase.getDatabase(applicationContext)
         val repository = FinanceRepository(
-            database.transactionDao(),
-            FirebaseFirestore.getInstance()
+            transactionDao = database.transactionDao(),
+            recurringExpenseDao = database.recurringExpenseDao(),
+            firestore = FirebaseFirestore.getInstance()
         )
 
         return try {
