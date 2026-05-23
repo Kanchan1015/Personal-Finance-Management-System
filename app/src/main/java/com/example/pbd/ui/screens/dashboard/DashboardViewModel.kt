@@ -20,7 +20,8 @@ data class DashboardUiState(
     val categoryBreakdown: Map<String, Double> = emptyMap(),
     val activeGoal: Goal? = null,
     val goalProgress: Float = 0f,
-    val error: String? = null
+    val error: String? = null,
+    val userName: String = "User"
 )
 
 class DashboardViewModel(private val repository: DashboardRepository) : ViewModel() {
@@ -31,6 +32,14 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
     init {
         loadTransactions()
         loadGoals()
+        loadUserProfile()
+    }
+
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            val name = repository.getUserName()
+            _uiState.value = _uiState.value.copy(userName = name)
+        }
     }
 
     private fun loadTransactions() {
