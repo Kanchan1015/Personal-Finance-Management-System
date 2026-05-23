@@ -13,6 +13,7 @@ ksp = "1.9.22-1.0.17"
 junit = "4.13.2"
 retrofit = "2.11.0"
 koin = "3.5.3"
+coroutines = "1.8.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -39,6 +40,7 @@ retrofit-gson-converter = { group = "com.squareup.retrofit2", name = "converter-
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
 koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
