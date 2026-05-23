@@ -20,37 +20,27 @@ data class GoalDetailUiState(
     val error: String? = null
 )
 
-class GoalDetailViewModel : ViewModel() {
-
-    private val repository = GoalRepository()
+class GoalDetailViewModel(private val repository: GoalRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GoalDetailUiState())
     val uiState: StateFlow<GoalDetailUiState> = _uiState.asStateFlow()
 
     fun loadGoal(goalId: String) {
         viewModelScope.launch {
-            if (goalId.isEmpty()) {
-                repository.getAllGoals().collect { goals ->
-                    val goal = goals.firstOrNull()
-                    if (goal != null) {
-                        calculateAndUpdate(goal)
-                    } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "No active goal found"
-                        )
-                    }
+            repository.getAllGoals().collect { goals ->
+                val goal = if (goalId == "active" || goalId.isEmpty()) {
+                    goals.firstOrNull()
+                } else {
+                    goals.find { it.id == goalId } ?: goals.firstOrNull()
                 }
-            } else {
-                repository.getGoalById(goalId).collect { goal ->
-                    if (goal != null) {
-                        calculateAndUpdate(goal)
-                    } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "Goal not found"
-                        )
-                    }
+
+                if (goal != null) {
+                    calculateAndUpdate(goal)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "No active goal found"
+                    )
                 }
             }
         }
@@ -70,14 +60,6 @@ class GoalDetailViewModel : ViewModel() {
         val monthlyTargetNeeded = if (monthsRemaining > 0) {
             amountRemaining / monthsRemaining
         } else amountRemaining
-
-        // On track if they've saved at least what they should have by now
-        val totalMonths = if (goal.deadline > 0) {
-            val totalDiff = goal.deadline - (goal.id.hashCode().toLong())
-            (TimeUnit.MILLISECONDS.toDays(
-                goal.deadline - System.currentTimeMillis()
-            ) / 30).coerceAtLeast(0)
-        } else 0L
 
         val isOnTrack = progressPercent > 0 && monthsRemaining > 0
 
