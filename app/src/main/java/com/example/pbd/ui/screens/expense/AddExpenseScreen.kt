@@ -27,12 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavHostController
 import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.ui.expense.ExpenseUiState
 import com.example.pbd.ui.expense.ExpenseViewModel
-import com.example.pbd.ui.expense.ExpenseViewModelFactory
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
@@ -84,11 +83,7 @@ enum class DateOption {
 @Composable
 fun AddExpenseScreen(
     navController: NavHostController,
-    viewModel: ExpenseViewModel = viewModel(
-        factory = ExpenseViewModelFactory(
-            LocalContext.current.applicationContext as Application
-        )
-    )
+    viewModel: ExpenseViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
