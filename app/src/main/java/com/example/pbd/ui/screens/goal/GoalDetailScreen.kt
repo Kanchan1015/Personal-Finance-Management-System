@@ -19,16 +19,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.pbd.ui.theme.*
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalDetailScreen(
     navController: NavHostController,
     goalId: String,
-    viewModel: GoalDetailViewModel = viewModel()
+    viewModel: GoalDetailViewModel = koinViewModel()
 ) {
     LaunchedEffect(goalId) {
         viewModel.loadGoal(goalId)

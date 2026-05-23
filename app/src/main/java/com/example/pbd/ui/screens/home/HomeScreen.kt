@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -139,7 +140,14 @@ fun HomeScreen(
                         iconBg = Brush.linearGradient(listOf(AccentGreen, AccentBlue)),
                         onClick = { navController.navigate(Screen.AddIncome.route) }
                     )
-                    Spacer(modifier = Modifier.weight(1f))
+                    QuickActionCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.TrackChanges,
+                        label = "Goal Tracker",
+                        description = "View your savings goal",
+                        iconBg = Brush.linearGradient(listOf(AccentPurple, Color(0xFFE040FB))),
+                        onClick = { navController.navigate(Screen.GoalDetail.createRoute("active")) }
+                    )
                 }
 
                 Spacer(Modifier.height(28.dp))
