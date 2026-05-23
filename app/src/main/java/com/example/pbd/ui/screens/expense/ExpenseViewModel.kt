@@ -1,22 +1,25 @@
-package com.example.pbd.ui.expense
+package com.example.pbd.ui.screens.expense
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.pbd.data.local.AppDatabase
-import com.example.pbd.data.model.Transaction
 import com.example.pbd.data.model.RecurringExpense
+import com.example.pbd.data.model.Transaction
 import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.FinanceRepository
+import com.example.pbd.ui.screens.expense.ExpenseUiState
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
+sealed class ExpenseUiState {
+    object Idle : ExpenseUiState()
+    object Loading : ExpenseUiState()
+    object Success : ExpenseUiState()
+    data class Error(val message: String) : ExpenseUiState()
+}
 // AndroidViewModel gives us the Application context safely (no memory leaks)
 class ExpenseViewModel(private val repository: FinanceRepository, private val auth: FirebaseAuth) : ViewModel() {
 
@@ -59,12 +62,12 @@ class ExpenseViewModel(private val repository: FinanceRepository, private val au
                 repository.saveTransaction(transaction)
 
                 if (isRecurring) {
-                    val cal = java.util.Calendar.getInstance()
+                    val cal = Calendar.getInstance()
                     cal.timeInMillis = timestamp
                     if (recurringInterval == "WEEKLY") {
-                        cal.add(java.util.Calendar.DAY_OF_YEAR, 7)
+                        cal.add(Calendar.DAY_OF_YEAR, 7)
                     } else {
-                        cal.add(java.util.Calendar.MONTH, 1)
+                        cal.add(Calendar.MONTH, 1)
                     }
                     val recurringExpense = RecurringExpense(
                         userId = userId,
@@ -91,4 +94,3 @@ class ExpenseViewModel(private val repository: FinanceRepository, private val au
     }
 }
 
-// Simple factory that provides the Application to our ViewModel
