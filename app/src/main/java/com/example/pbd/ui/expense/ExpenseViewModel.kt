@@ -29,8 +29,12 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     val uiState: StateFlow<ExpenseUiState> = _uiState
 
     fun saveExpense(amount: Double, category: TransactionCategory, subCategory: String, note: String) {
-        // Get the current logged-in user's ID from Firebase Auth, fallback to "anonymous_test_user" for testing bypassing login
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous_test_user"
+        // Get the real Firebase Auth UID — the auth guard guarantees this is non-null
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId == null) {
+            _uiState.value = ExpenseUiState.Error("You must be logged in to save an expense.")
+            return
+        }
 
         viewModelScope.launch {
             _uiState.value = ExpenseUiState.Loading
