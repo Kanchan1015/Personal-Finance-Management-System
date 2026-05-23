@@ -3,6 +3,7 @@ package com.example.pbd
 import android.app.Application
 import androidx.work.*
 import com.example.pbd.data.worker.SyncWorker
+import com.example.pbd.data.worker.RecurringExpenseWorker
 import com.example.pbd.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -21,6 +22,7 @@ class PbdApplication : Application() {
         }
         
         setupSyncWorker()
+        setupRecurringExpenseWorker()
     }
 
     private fun setupSyncWorker() {
@@ -36,6 +38,17 @@ class PbdApplication : Application() {
             "SyncWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             syncRequest
+        )
+    }
+
+    private fun setupRecurringExpenseWorker() {
+        val recurringRequest = PeriodicWorkRequestBuilder<RecurringExpenseWorker>(12, TimeUnit.HOURS)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "RecurringExpenseWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            recurringRequest
         )
     }
 }

@@ -49,7 +49,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavHostController
 import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.ui.theme.PBDTheme
@@ -68,11 +68,7 @@ private val incomeTypes = listOf("Salary", "Freelance", "Crypto")
 @Composable
 fun AddIncomeScreen(
     navController: NavHostController,
-    viewModel: IncomeViewModel = viewModel(
-        factory = IncomeViewModelFactory(
-            LocalContext.current.applicationContext as Application
-        )
-    )
+    viewModel: IncomeViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current

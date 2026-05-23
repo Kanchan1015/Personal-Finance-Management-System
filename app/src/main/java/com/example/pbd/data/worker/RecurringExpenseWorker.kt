@@ -7,7 +7,7 @@ import com.example.pbd.data.repository.FinanceRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class SyncWorker(
+class RecurringExpenseWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params), KoinComponent {
@@ -16,9 +16,10 @@ class SyncWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            repository.syncUnsyncedTransactions()
+            repository.checkAndProcessRecurringExpenses()
             Result.success()
         } catch (e: Exception) {
+            e.printStackTrace()
             Result.retry()
         }
     }

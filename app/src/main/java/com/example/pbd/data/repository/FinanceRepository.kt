@@ -2,8 +2,11 @@ package com.example.pbd.data.repository
 
 import android.util.Log
 import com.example.pbd.data.local.TransactionDao
+import com.example.pbd.data.local.RecurringExpenseDao
 import com.example.pbd.data.model.ExchangeRateResponse
+import com.example.pbd.data.model.RecurringExpense
 import com.example.pbd.data.model.Transaction
+import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.remote.ExchangeRateApi
 import com.example.pbd.data.remote.RetrofitClient
 import com.google.firebase.firestore.FirebaseFirestore
@@ -15,6 +18,7 @@ import kotlinx.coroutines.tasks.await
 
 class FinanceRepository(
     private val transactionDao: TransactionDao,
+    private val recurringExpenseDao: RecurringExpenseDao,
     private val firestore: FirebaseFirestore
 ) {
     private companion object {
@@ -23,12 +27,14 @@ class FinanceRepository(
 
     private val exchangeRateApi: ExchangeRateApi = RetrofitClient.exchangeRateApi
 
+    // ── Transactions ──────────────────────────────────────────────────────────
+
     // Exposes a live stream of all transactions from Room
     val allTransactions: Flow<List<Transaction>> = transactionDao.getAllTransactions()
 
+    // saveIncome delegates to saveTransaction (offline-first: Room first, then Firestore)
     suspend fun saveIncome(transaction: Transaction): Result<Unit> {
         return try {
-            // Delegates to saveTransaction which handles Room + Firestore (offline-first)
             saveTransaction(transaction)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -127,5 +133,62 @@ class FinanceRepository(
             .document(transaction.id)
             .set(firestoreData)
             .await()
+    }
+
+    // ── Recurring Expenses ────────────────────────────────────────────────────
+
+    // Live stream of all recurring expense templates
+    val allRecurringExpenses: Flow<List<RecurringExpense>> = recurringExpenseDao.getAllRecurringExpenses()
+
+    // Saves a new recurring expense template to local Room
+    suspend fun saveRecurringExpense(recurringExpense: RecurringExpense) {
+        recurringExpenseDao.insertRecurringExpense(recurringExpense)
+    }
+
+    // Called by RecurringExpenseWorker every 12 hours to auto-log any due expenses
+    // Called by RecurringExpenseWorker every 12 hours to auto-log any due expenses
+    suspend fun checkAndProcessRecurringExpenses() {
+        val activeExpenses = recurringExpenseDao.getActiveRecurringExpenses()
+        val now = System.currentTimeMillis()
+
+        activeExpenses.forEach { recurring ->
+            var nextExecution = recurring.nextExecutionDate
+            val cal = java.util.Calendar.getInstance()
+
+            // Catch up in case the worker didn't run for multiple cycles.
+            while (nextExecution <= now) {
+                val autoTransaction = Transaction(
+                    // Deterministic ID prevents duplicates if this occurrence is retried.
+                    id = "${recurring.id}:$nextExecution",
+                    userId = recurring.userId,
+                    type = TransactionType.EXPENSE,
+                    amount = recurring.amount,
+                    currency = "LKR",
+                    exchangeRate = 1.0,
+                    baseAmountLKR = recurring.amount,
+                    category = recurring.category,
+                    subCategory = recurring.subCategory,
+                    note = if (recurring.note.isBlank()) "Auto-logged" else "${recurring.note} (Auto-logged)",
+                    // Record the scheduled execution time rather than 'now'.
+                    timestamp = nextExecution
+                )
+
+                saveTransaction(autoTransaction)
+
+                // Advance to the next scheduled execution
+                cal.timeInMillis = nextExecution
+                if (recurring.interval == "WEEKLY") {
+                    cal.add(java.util.Calendar.DAY_OF_YEAR, 7)
+                } else {
+                    cal.add(java.util.Calendar.MONTH, 1)
+                }
+                nextExecution = cal.timeInMillis
+            }
+
+            // Persist the next due date only if it changed
+            if (nextExecution != recurring.nextExecutionDate) {
+                recurringExpenseDao.updateNextExecutionDate(recurring.id, nextExecution)
+            }
+        }
     }
 }
