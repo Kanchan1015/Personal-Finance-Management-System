@@ -18,16 +18,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class IncomeViewModel(application: Application) : AndroidViewModel(application) {
+class IncomeViewModel(private val repository: FinanceRepository, private val auth: FirebaseAuth) : ViewModel() {
     private companion object {
         const val TAG = "IncomeViewModel"
     }
 
-    private val repository: FinanceRepository = FinanceRepository(
-        transactionDao = AppDatabase.getDatabase(application).transactionDao(),
-        recurringExpenseDao = AppDatabase.getDatabase(application).recurringExpenseDao(),
-        firestore = FirebaseFirestore.getInstance()
-    )
 
     private val _uiState = MutableStateFlow(IncomeUiState())
     val uiState: StateFlow<IncomeUiState> = _uiState.asStateFlow()
@@ -133,7 +128,7 @@ class IncomeViewModel(application: Application) : AndroidViewModel(application) 
             )
 
             // Get the real Firebase Auth UID — the auth guard guarantees this is non-null
-            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            val userId = auth.currentUser?.uid
             if (userId == null) {
                 _uiState.value = currentState.copy(
                     isLoading = false,
@@ -183,9 +178,3 @@ class IncomeViewModel(application: Application) : AndroidViewModel(application) 
     }
 }
 
-class IncomeViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return IncomeViewModel(application) as T
-    }
-}
