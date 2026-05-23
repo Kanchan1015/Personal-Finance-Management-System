@@ -9,6 +9,7 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class DashboardRepository(
     private val firestore: FirebaseFirestore,
@@ -16,6 +17,16 @@ class DashboardRepository(
 ) {
 
     private val userId get() = auth.currentUser?.uid ?: ""
+
+    suspend fun getUserName(): String {
+        return try {
+            if (userId.isEmpty()) return "User"
+            val doc = firestore.collection("users").document(userId).get().await()
+            doc.getString("name") ?: "User"
+        } catch (e: Exception) {
+            "User"
+        }
+    }
 
     fun getTransactions(): Flow<List<Transaction>> = callbackFlow {
         if (userId.isEmpty()) {
