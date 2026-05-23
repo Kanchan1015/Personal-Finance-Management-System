@@ -5,7 +5,7 @@ import com.example.pbd.data.repository.AuthRepository
 import com.example.pbd.data.repository.AuthRepositoryImpl
 import com.example.pbd.data.repository.DashboardRepository
 import com.example.pbd.data.repository.FinanceRepository
-import com.example.pbd.ui.expense.ExpenseViewModel
+import com.example.pbd.ui.screens.expense.ExpenseViewModel
 import com.example.pbd.ui.screens.auth.AuthViewModel
 import com.example.pbd.ui.screens.dashboard.DashboardViewModel
 import com.example.pbd.ui.screens.income.IncomeViewModel
@@ -36,5 +36,5 @@ val appModule = module {
     viewModel { ProfileViewModel(get()) }
     viewModel { IncomeViewModel(get(), get()) }
     viewModel { ExpenseViewModel(get(), get()) }
-    viewModel { DashboardViewModel() }
+    viewModel { DashboardViewModel(get()) }
 }

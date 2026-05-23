@@ -1,6 +1,5 @@
 package com.example.pbd.ui.screens.expense
 
-import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,8 +29,7 @@ import androidx.compose.ui.unit.sp
 import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavHostController
 import com.example.pbd.data.model.TransactionCategory
-import com.example.pbd.ui.expense.ExpenseUiState
-import com.example.pbd.ui.expense.ExpenseViewModel
+import com.example.pbd.ui.screens.expense.ExpenseUiState
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
