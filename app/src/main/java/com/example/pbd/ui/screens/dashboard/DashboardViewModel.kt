@@ -23,9 +23,7 @@ data class DashboardUiState(
     val error: String? = null
 )
 
-class DashboardViewModel : ViewModel() {
-
-    private val repository = DashboardRepository()
+class DashboardViewModel(private val repository: DashboardRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
