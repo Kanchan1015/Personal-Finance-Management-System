@@ -19,6 +19,7 @@ class TransactionHistoryViewModel(application: Application) : AndroidViewModel(a
 
     private val repository: FinanceRepository = FinanceRepository(
         transactionDao = AppDatabase.getDatabase(application).transactionDao(),
+        recurringExpenseDao = AppDatabase.getDatabase(application).recurringExpenseDao(),
         firestore = FirebaseFirestore.getInstance()
     )
 

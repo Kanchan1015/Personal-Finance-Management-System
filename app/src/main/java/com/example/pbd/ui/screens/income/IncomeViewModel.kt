@@ -25,6 +25,7 @@ class IncomeViewModel(application: Application) : AndroidViewModel(application) 
 
     private val repository: FinanceRepository = FinanceRepository(
         transactionDao = AppDatabase.getDatabase(application).transactionDao(),
+        recurringExpenseDao = AppDatabase.getDatabase(application).recurringExpenseDao(),
         firestore = FirebaseFirestore.getInstance()
     )
 
