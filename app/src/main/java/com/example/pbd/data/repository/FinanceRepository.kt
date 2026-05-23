@@ -9,7 +9,6 @@ import com.example.pbd.data.remote.RetrofitClient
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -28,8 +27,13 @@ class FinanceRepository(
     val allTransactions: Flow<List<Transaction>> = transactionDao.getAllTransactions()
 
     suspend fun saveIncome(transaction: Transaction): Result<Unit> {
-        delay(500)
-        return Result.success(Unit)
+        return try {
+            // Delegates to saveTransaction which handles Room + Firestore (offline-first)
+            saveTransaction(transaction)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun getExchangeRate(baseCurrency: String): Result<Double> {

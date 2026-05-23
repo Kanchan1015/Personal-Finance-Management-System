@@ -31,9 +31,10 @@ fun RegisterScreen(
         when (authState) {
             is AuthState.Success -> {
                 viewModel.resetState() // Prevent re-triggering
+                // Navigate to Home and clear the entire auth flow (Splash → Login → Register)
+                // from the back stack so the user cannot navigate back to any auth screen
                 navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
-                    popUpTo(Screen.Register.route) { inclusive = true }
+                    popUpTo(Screen.Splash.route) { inclusive = true }
                 }
             }
             is AuthState.Error -> {

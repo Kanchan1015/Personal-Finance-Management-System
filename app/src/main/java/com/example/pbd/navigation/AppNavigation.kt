@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.pbd.ui.screens.splash.SplashScreen
 import com.example.pbd.ui.screens.home.HomeScreen
 import com.example.pbd.ui.screens.auth.LoginScreen
 import com.example.pbd.ui.screens.auth.RegisterScreen
@@ -20,8 +21,12 @@ import com.example.pbd.ui.screens.transactions.TransactionHistoryScreen
 fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route
+        // Splash is the true entry point; it checks auth and routes immediately
+        startDestination = Screen.Splash.route
     ) {
+        composable(Screen.Splash.route) {
+            SplashScreen(navController = navController)
+        }
         composable(Screen.Home.route) {
             HomeScreen(navController = navController)
         }
