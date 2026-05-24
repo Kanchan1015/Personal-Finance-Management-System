@@ -6,8 +6,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -35,6 +38,7 @@ fun GoalDetailScreen(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    var showAddGoalDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -75,20 +79,57 @@ fun GoalDetailScreen(
 
             uiState.error != null -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = uiState.error ?: "Something went wrong",
-                        color = ExpenseRed,
-                        fontSize = 16.sp
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrackChanges,
+                            contentDescription = null,
+                            tint = AccentPurple,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Text(
+                            text = "No savings goal yet",
+                            color = TextPrimary,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Set a goal to track your progress toward purchasing the MacBook Pro M4",
+                            color = TextSecondary,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { showAddGoalDialog = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AccentPurple
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Set Savings Goal", fontSize = 15.sp)
+                        }
+                    }
                 }
             }
 
             uiState.goal != null -> {
                 val goal = uiState.goal!!
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -97,7 +138,6 @@ fun GoalDetailScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-
                     // Goal hero card
                     Box(
                         modifier = Modifier
@@ -247,7 +287,96 @@ fun GoalDetailScreen(
                 }
             }
         }
+
+        if (showAddGoalDialog) {
+            AddGoalDialog(
+                onDismiss = { showAddGoalDialog = false },
+                onConfirm = { title, target, months ->
+                    viewModel.addGoal(title, target, months)
+                    showAddGoalDialog = false
+                }
+            )
+        }
     }
+}
+
+@Composable
+private fun AddGoalDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, Double, Int) -> Unit
+) {
+    var title by remember { mutableStateOf("MacBook Pro M4") }
+    var targetAmount by remember { mutableStateOf("490000") }
+    var months by remember { mutableStateOf("12") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DarkCard,
+        title = {
+            Text(
+                text = "Set Savings Goal",
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Goal Name", color = TextSecondary) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentPurple,
+                        unfocusedBorderColor = TextSecondary,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = targetAmount,
+                    onValueChange = { targetAmount = it },
+                    label = { Text("Target Amount (LKR)", color = TextSecondary) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentPurple,
+                        unfocusedBorderColor = TextSecondary,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = months,
+                    onValueChange = { months = it },
+                    label = { Text("Target Months", color = TextSecondary) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentPurple,
+                        unfocusedBorderColor = TextSecondary,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val target = targetAmount.toDoubleOrNull() ?: 490000.0
+                    val monthsInt = months.toIntOrNull() ?: 12
+                    onConfirm(title, target, monthsInt)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple)
+            ) {
+                Text("Save Goal")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondary)
+            }
+        }
+    )
 }
 
 @Composable

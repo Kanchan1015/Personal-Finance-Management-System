@@ -49,4 +49,18 @@ class GoalRepository(
 
         awaitClose { listener.remove() }
     }
+
+    suspend fun addGoal(title: String, targetAmount: Double, months: Int) {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val deadline = System.currentTimeMillis() + (months.toLong() * 30 * 24 * 60 * 60 * 1000)
+        val goal = hashMapOf(
+            "userId" to currentUserId,
+            "title" to title,
+            "targetAmount" to targetAmount,
+            "currentSaved" to 0.0,
+            "deadline" to deadline,
+            "status" to "ACTIVE"
+        )
+        firestore.collection("goals").add(goal)
+    }
 }

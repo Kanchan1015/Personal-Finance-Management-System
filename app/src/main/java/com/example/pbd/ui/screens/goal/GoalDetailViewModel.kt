@@ -46,6 +46,12 @@ class GoalDetailViewModel(private val repository: GoalRepository) : ViewModel() 
         }
     }
 
+    fun addGoal(title: String, targetAmount: Double, months: Int) {
+        viewModelScope.launch {
+            repository.addGoal(title, targetAmount, months)
+        }
+    }
+
     private fun calculateAndUpdate(goal: Goal) {
         val progressPercent = if (goal.targetAmount > 0) {
             ((goal.currentSaved / goal.targetAmount) * 100).toInt().coerceIn(0, 100)
