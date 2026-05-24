@@ -1,0 +1,987 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R 27 0 R 29 0 R 31 0 R 33 0 R 35 0 R 37 0 R 39 0 R 41 0 R 43 0 R 45 0 R 47 0 R] /Count 23 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 570 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(SE3092 - Platform Based Development Assignment 01 | 2026 Semester 01 Technical Design) Tj
+T*
+/F1 10 Tf
+(Document FinPilot / FinanceTrack Personal Finance Management System for Android Submitted to) Tj
+T*
+(Sri Lanka Institute of Information Technology Faculty of Computing Prepared for the Kavindu) Tj
+T*
+(Silva personal finance scenario Technology Stack: Kotlin, Jetpack Compose, MVVM, Firebase,) Tj
+T*
+(Room Basic project-specific design document generated from the current implementation.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 1) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 818 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(Table of Contents Introduction Scenario Analysis Problem Understanding Functional) Tj
+T*
+/F1 10 Tf
+(Requirements Non-Functional Requirements and Constraints Technology Stack MVVM Architecture) Tj
+T*
+(Component Interaction Navigation Architecture Firestore Data Model Local Room Database and) Tj
+T*
+(Offline Strategy Security Rules and Data Ownership UI/UX Design Principles Annotated) Tj
+T*
+(Wireframes Design Justifications Implementation Status and Limitations Conclusion This) Tj
+T*
+(document is intentionally aligned with the SE3092 assignment brief. It avoids generic) Tj
+T*
+(budgeting-app language by grounding requirements in Kavindu Silva's irregular income,) Tj
+T*
+(low-friction expense entry needs, and MacBook Pro savings goal.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 2) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 1483 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(1. Introduction 1.1 Purpose This Technical Design Document describes the design of Fin) Tj
+T*
+/F1 10 Tf
+(an Android personal finance management application developed for the SE3092 assignment. It) Tj
+T*
+(converts the scenario of Kavindu Silva into a technical solution using Kotlin, Jetpack) Tj
+T*
+(Compose, MVVM, Firebase Authentication, Cloud Firestore, Room, Retrofit, WorkManager, and) Tj
+T*
+(Koin. 1.2 Application Overview Kavindu earns from a fluctuating salary, freelance projects,) Tj
+T*
+(USD-based AdSense revenue, and crypto activity. He struggles to understand total monthly) Tj
+T*
+(income, committed versus discretionary spending, and whether he is moving toward his LKR) Tj
+T*
+(490,000 MacBook Pro M4 goal. FinPilot addresses these problems by combining multi-source) Tj
+T*
+(income recording, fast expense logging, dashboard analytics, offline-first transaction) Tj
+T*
+(persistence, and goal tracking. 1.3 Scope Firebase Authentication with email/password,) Tj
+T*
+(password reset, and Google Sign-In. Multi-currency income entry with live LKR conversion.) Tj
+T*
+(Quick expense entry with committed and discretionary categorisation. Dashboard totals for) Tj
+T*
+(income, expenses, net balance, spending overview, and recent transactions. MacBook-oriented) Tj
+T*
+(savings goal tracking and manual savings boosts. Room-first local transaction persistence) Tj
+T*
+(with background Firestore sync.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 3) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 1351 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(2. Scenario Analysis 2.1 Persona Summary Attribute Scenario Detail Design Implication ) Tj
+T*
+/F1 10 Tf
+(Kavindu Silva, 25-year-old junior software engineer in Colombo. The app must feel) Tj
+T*
+(lightweight, modern, and useful under real working pressure. Income Salary, freelance) Tj
+T*
+(projects, AdSense USD, crypto gains/losses. Income records must store source, currency,) Tj
+T*
+(exchange rate, and LKR equivalent. Expenses Rent, transport, food delivery, subscriptions,) Tj
+T*
+(coffee, cash spending. Expense entry must be fast and broad enough to support month-end) Tj
+T*
+(insight. Goal MacBook Pro M4, approximately LKR 490,000 within 12 months. The goal must be) Tj
+T*
+(visible and connected to daily financial behaviour. Failed Attempts Sheets, generic) Tj
+T*
+(budgeting apps, notes, bank summaries. The solution must reduce manual work and avoid rigid) Tj
+T*
+(single-income assumptions. 2.2 Core Insight Kavindu's problem is not only missing records.) Tj
+T*
+(It is financial invisibility. He lacks a simple place where irregular income, spontaneous) Tj
+T*
+(expenses, and goal progress become visible together. The system therefore prioritises fast) Tj
+T*
+(capture, normalised LKR calculations, and an at-a-glance dashboard over complex budget) Tj
+T*
+(planning.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 4) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 12 0 R >>
+endobj
+12 0 obj
+<< /Length 1352 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(3. Problem Understanding 3.1 Income Structure The system must understand that income i) Tj
+T*
+/F1 10 Tf
+(fixed monthly salary only. It must support different sources, different currencies, and) Tj
+T*
+(irregular arrival dates. Each income entry stores the raw amount, original currency,) Tj
+T*
+(exchange rate used at entry time, and converted LKR amount. This makes totals historically) Tj
+T*
+(stable and avoids recalculating past income with a new exchange rate. 3.2 Expense Friction) Tj
+T*
+(Kavindu abandoned previous tools because they required too much effort. FinPilot's expense) Tj
+T*
+(flow uses quick amount chips, category icons, date shortcuts, and optional notes. This) Tj
+T*
+(reduces the number of decisions needed when logging a transaction in daily life. 3.3 Goal) Tj
+T*
+(Visibility The MacBook goal should not be a separate spreadsheet. It is shown in the) Tj
+T*
+(home/dashboard experience and can receive manual boosts or savings routed from income. This) Tj
+T*
+(makes goal progress emotionally and financially visible. 3.4 Minimum Self-Awareness Views) Tj
+T*
+(Net balance summary. Total income and total expenses. Spending categories, including) Tj
+T*
+(committed and discretionary categories. Recent transactions. Goal progress and remaining) Tj
+T*
+(amount.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 5) Tj
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 14 0 R >>
+endobj
+14 0 obj
+<< /Length 1426 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(4. Functional Requirements ID Requirement Priority Current Implementation FR-01 User) Tj
+T*
+/F1 10 Tf
+(registration with email and password. High RegisterScreen, AuthViewModel, AuthRepository,) Tj
+T*
+(FirebaseAuth. FR-02 User login with email and password. High LoginScreen and) Tj
+T*
+(AuthRepository.login. FR-03 Password reset by email. Medium LoginScreen reset dialog and) Tj
+T*
+(Firebase sendPasswordResetEmail. FR-04 Google Sign-In. Bonus LoginScreen Google flow and) Tj
+T*
+(AuthRepository.signInWithGoogle. FR-05 Create and store user profile. High users collection,) Tj
+T*
+(User model, ProfileScreen. FR-06 Record income from salary, freelance, crypto, or other) Tj
+T*
+(sources. High AddIncomeScreen and IncomeViewModel. FR-07 Convert foreign income to LKR. High) Tj
+T*
+(Retrofit ExchangeRateApi and FinanceRepository.getExchangeRate. FR-08 Record expenses) Tj
+T*
+(quickly. High AddExpenseScreen and ExpenseViewModel. FR-09 Track MacBook savings goal. High) Tj
+T*
+(GoalRepository, GoalDetailScreen, dashboard GoalCard. FR-10 Show dashboard summary and) Tj
+T*
+(recent transactions. High HomeScreen, DashboardScreen, DashboardViewModel. FR-11 Show) Tj
+T*
+(chronological transaction history. Medium TransactionHistoryScreen. FR-12 Support offline) Tj
+T*
+(transaction capture. High Room database, FinanceRepository.saveTransaction, SyncWorker.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 6) Tj
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 16 0 R >>
+endobj
+16 0 obj
+<< /Length 1415 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(5. Non-Functional Requirements and Constraints ID Type Requirement / Constraint Design) Tj
+T*
+/F1 10 Tf
+(Response NFR-01 Usability Daily logging must be low-friction. Quick chips, category icons,) Tj
+T*
+(small forms, dashboard summaries. NFR-02 Reliability No blank screens or crashes on empty) Tj
+T*
+(data. Loading, empty, and error states are used across major screens. NFR-03 Offline) Tj
+T*
+(Transaction logging must not block on network. Room-first save, then background Firestore) Tj
+T*
+(push. NFR-04 Security Users must only access their own data. Firebase Auth UID stored and) Tj
+T*
+(checked in Firestore rules. NFR-05 Maintainability Clear separation of UI, ViewModel,) Tj
+T*
+(Repository, and data models. MVVM with Koin, StateFlow, repositories, and models. NFR-06) Tj
+T*
+(Data Integrity Currency conversions must be historically stable. Each transaction stores) Tj
+T*
+(exchangeRate and baseAmountLKR. CON-01 Platform Android API 26+ and target SDK 34+. minSdk) Tj
+T*
+(26 and targetSdk 35. CON-02 Language 100% Kotlin application layer. Kotlin source files and) Tj
+T*
+(Gradle Kotlin DSL. CON-03 UI Jetpack Compose only; no XML layouts. All screens implemented) Tj
+T*
+(as composables. CON-04 Backend Firebase Authentication and Firestore required.) Tj
+T*
+(AuthRepository, DashboardRepository, GoalRepository, FinanceRepository.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 7) Tj
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 18 0 R >>
+endobj
+18 0 obj
+<< /Length 1030 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(6. Technology Stack Layer Technology Purpose Language Kotlin Primary application langu) Tj
+T*
+/F1 10 Tf
+(UI Jetpack Compose + Material 3 Declarative UI and modern Android components. Navigation) Tj
+T*
+(Navigation Compose Single-activity screen navigation. Architecture MVVM + Repository) Tj
+T*
+(Separation of UI state and data operations. State StateFlow Reactive UI state observed by) Tj
+T*
+(composables. Async Kotlin Coroutines Non-blocking Firebase, Room, and API operations.) Tj
+T*
+(Authentication Firebase Authentication Email/password, password reset, Google Sign-In. Cloud) Tj
+T*
+(DB Cloud Firestore Remote storage for users, transactions, and goals. Local DB Room Offline) Tj
+T*
+(transaction and recurring expense storage. Networking Retrofit + Gson Exchange-rate API) Tj
+T*
+(integration. Background WorkManager Sync retries and recurring expense processing.) Tj
+T*
+(Dependency Injection Koin Repository, ViewModel, Firebase, and Room wiring.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 8) Tj
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 20 0 R >>
+endobj
+20 0 obj
+<< /Length 1623 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(7. MVVM Architecture +-----------------------------+ | UI Layer - Jetpack Compose | | ) Tj
+T*
+/F1 10 Tf
+(Register, Home, | | Income, Expense, Goal, | | Profile, History |) Tj
+T*
+(+--------------+--------------+ | v +-----------------------------+ | ViewModel Layer | |) Tj
+T*
+(AuthViewModel | | IncomeViewModel | | ExpenseViewModel | | DashboardViewModel | |) Tj
+T*
+(GoalDetailViewModel | | ProfileViewModel | +--------------+--------------+ | v) Tj
+T*
+(+-----------------------------+ | Repository Layer | | AuthRepository | | FinanceRepository) Tj
+T*
+(| | DashboardRepository | | GoalRepository | +--------------+--------------+ | v) Tj
+T*
+(+-----------------------------+ | Data Sources | | Firebase Auth | | Firestore | | Room) Tj
+T*
+(Database | | Retrofit Exchange API | +-----------------------------+ The UI layer only) Tj
+T*
+(displays state and forwards user events. ViewModels hold StateFlow objects and call) Tj
+T*
+(repositories using viewModelScope. Repositories contain business and data-access logic. The) Tj
+T*
+(data sources are Firebase Authentication, Firestore, Room, and Retrofit. Example: Login Flow) Tj
+T*
+(User enters email and password in LoginScreen. LoginScreen calls AuthViewModel.login\(email,) Tj
+T*
+(password\). AuthViewModel sets AuthState.Loading. AuthRepository calls) Tj
+T*
+(FirebaseAuth.signInWithEmailAndPassword. Repository loads the user profile from Firestore.) Tj
+T*
+(AuthViewModel emits AuthState.Success or AuthState.Error. LoginScreen observes the state and) Tj
+T*
+(navigates to Home or shows an error.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 9) Tj
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 22 0 R >>
+endobj
+22 0 obj
+<< /Length 1167 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(8. Component Interaction Feature UI ViewModel Repository/Data Source Authentication) Tj
+T*
+/F1 10 Tf
+(LoginScreen, RegisterScreen AuthViewModel AuthRepository, FirebaseAuth, users collection) Tj
+T*
+(Profile ProfileScreen ProfileViewModel AuthRepository, users collection Income) Tj
+T*
+(AddIncomeScreen IncomeViewModel FinanceRepository, GoalRepository, Retrofit, Room, Firestore) Tj
+T*
+(Expense AddExpenseScreen ExpenseViewModel FinanceRepository, Room, Firestore Dashboard) Tj
+T*
+(HomeScreen, DashboardScreen DashboardViewModel FinanceRepository, DashboardRepository,) Tj
+T*
+(GoalRepository Goal GoalDetailScreen GoalDetailViewModel GoalRepository, FinanceRepository) Tj
+T*
+(History TransactionHistoryScreen TransactionHistoryViewModel FinanceRepository and Room) Tj
+T*
+(transactions Background Sync Not visible Not applicable SyncWorker and FinanceRepository) Tj
+T*
+(Koin creates shared instances of FirebaseAuth, FirebaseFirestore, Room DAOs, repositories,) Tj
+T*
+(and ViewModels. This reduces manual wiring and keeps the codebase closer to the assignment's) Tj
+T*
+(MVVM requirement.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 10) Tj
+ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 24 0 R >>
+endobj
+24 0 obj
+<< /Length 828 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(9. Navigation Architecture The application uses a single MainActivity and Navigation) Tj
+T*
+/F1 10 Tf
+(Compose. A splash screen checks FirebaseAuth.currentUser and routes the user either to Login) Tj
+T*
+(or Home. The home screen becomes the main launch point for dashboard, income, expenses,) Tj
+T*
+(goals, profile, and transaction history. Splash |-- if not authenticated --> Login | |--) Tj
+T*
+(Register | |-- Forgot Password Dialog | |-- Google Sign-In | |-- if authenticated ------->) Tj
+T*
+(Home |-- Dashboard |-- Add Income |-- Add Expense |-- Goal Detail |-- Transaction History) Tj
+T*
+(|-- Profile / Settings Screen Routes splash login register home profile dashboard add_income) Tj
+T*
+(add_expense transaction_history goal_detail/{goalId}) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 11) Tj
+ET
+endstream
+endobj
+25 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 26 0 R >>
+endobj
+26 0 obj
+<< /Length 1110 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(10. Firestore Data Model 10.1 users Collection Field Type Description id String Fireba) Tj
+T*
+/F1 10 Tf
+(Auth UID. name String User display name. email String Authenticated email address.) Tj
+T*
+(baseCurrency String Default reporting currency, currently LKR. totalBalanceLKR Number Stored) Tj
+T*
+(balance field for profile/dashboard use. savingsPercentage Number Preferred percentage to) Tj
+T*
+(route toward savings. notificationsEnabled Boolean User setting for reminders. 10.2) Tj
+T*
+(transactions Collection Field Type Description userId String Owner UID. type String INCOME) Tj
+T*
+(or EXPENSE. amount Number Original user-entered amount. currency String LKR, USD, USDT, etc.) Tj
+T*
+(exchangeRate Number LKR conversion rate used at entry time. baseAmountLKR Number Normalised) Tj
+T*
+(amount used for totals. category String SALARY, FREELANCE, CRYPTO, COMMITTED, DISCRETIONARY,) Tj
+T*
+(SAVINGS. subCategory String Food, Transport, Coffee, Savings, etc. note String Optional) Tj
+T*
+(detail. timestamp Number Time of transaction.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 12) Tj
+ET
+endstream
+endobj
+27 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 28 0 R >>
+endobj
+28 0 obj
+<< /Length 1022 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(11. Goals, Indexes, and Query Strategy 11.1 goals Collection Field Type Description us) Tj
+T*
+/F1 10 Tf
+(String Owner UID. title String Goal name, e.g., MacBook Pro M4. targetAmount Number Goal) Tj
+T*
+(target amount in LKR. currentSaved Number Current saved amount. deadline Number Deadline) Tj
+T*
+(timestamp. status String ACTIVE or COMPLETED. 11.2 Indexing Strategy Collection Query Index) Tj
+T*
+(Need transactions where userId == current user, orderBy timestamp desc Composite index may) Tj
+T*
+(be required by Firestore. goals where userId == current user and status == ACTIVE Composite) Tj
+T*
+(index may be required for efficient active-goal lookup. users document by UID No composite) Tj
+T*
+(index needed. The implementation stores transactions in a flat top-level collection with a) Tj
+T*
+(userId field. This supports chronological feeds and background sync, but requires security) Tj
+T*
+(rules and userId filters to enforce ownership.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 13) Tj
+ET
+endstream
+endobj
+29 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 30 0 R >>
+endobj
+30 0 obj
+<< /Length 1291 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(12. Local Room Database and Offline Strategy Room is used as the local persistence lay) Tj
+T*
+/F1 10 Tf
+(The current Room database contains transaction and recurring expense tables. The key offline) Tj
+T*
+(design is Room-first writes: when income or expense is saved, the record is inserted locally) Tj
+T*
+(first and Firestore sync happens asynchronously. 12.1 Room Entities Entity Purpose Important) Tj
+T*
+(Fields Transaction Stores income and expense records locally. id, userId, type, amount,) Tj
+T*
+(currency, exchangeRate, baseAmountLKR, category, timestamp, isSynced. RecurringExpense) Tj
+T*
+(Stores recurring expense templates. id, userId, amount, category, interval,) Tj
+T*
+(nextExecutionDate, isEnabled. 12.2 Sync Flow User saves income or expense. FinanceRepository) Tj
+T*
+(inserts the transaction into Room. A background coroutine attempts to upload the transaction) Tj
+T*
+(to Firestore. If Firestore succeeds, the local row is marked isSynced = true. If network) Tj
+T*
+(fails, the row remains unsynced. SyncWorker retries unsynced transactions when connectivity) Tj
+T*
+(is available. This solves Kavindu's need to log expenses quickly even when mobile signal is) Tj
+T*
+(weak, such as during travel.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 14) Tj
+ET
+endstream
+endobj
+31 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 32 0 R >>
+endobj
+32 0 obj
+<< /Length 1292 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(13. Security Rules and Data Ownership Firestore rules are submitted in firestore.rules) Tj
+T*
+/F1 10 Tf
+(current rule structure allows authenticated users to access only their own profile document,) Tj
+T*
+(and only transactions/goals whose userId matches their Firebase Auth UID. users/{userId}) Tj
+T*
+(allow read/write if request.auth.uid == userId transactions/{transactionId} allow create if) Tj
+T*
+(request.auth.uid == request.resource.data.userId allow read/update/delete if) Tj
+T*
+(request.auth.uid == resource.data.userId goals/{goalId} allow create if request.auth.uid ==) Tj
+T*
+(request.resource.data.userId allow read/update/delete if request.auth.uid ==) Tj
+T*
+(resource.data.userId 13.1 Security Rationale Client-side checks are not enough because a) Tj
+T*
+(malicious client can call Firestore directly. Server-side rules provide the final) Tj
+T*
+(enforcement layer. Since financial records are private, every record must be bound to the) Tj
+T*
+(authenticated user's UID. 13.2 Future Improvement Rules can be strengthened by validating) Tj
+T*
+(required fields, allowed enum values, numeric ranges, and immutable owner fields. This would) Tj
+T*
+(further reduce accidental or malicious invalid writes.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 15) Tj
+ET
+endstream
+endobj
+33 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 34 0 R >>
+endobj
+34 0 obj
+<< /Length 1151 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(14. UI/UX Design Principles Principle Reason Implementation Low friction Kavindu aband) Tj
+T*
+/F1 10 Tf
+(tools with heavy manual entry. Quick expense chips, icon categories, date shortcuts, simple) Tj
+T*
+(forms. Financial clarity He cannot explain where money goes. Dashboard balance, spending) Tj
+T*
+(overview, recent transactions. Goal visibility The MacBook goal was emotionally present but) Tj
+T*
+(financially invisible. Goal card, progress bar, remaining amount, monthly need.) Tj
+T*
+(Multi-currency awareness Income arrives in LKR, USD, and crypto-linked values. Currency) Tj
+T*
+(selector and LKR conversion preview. Resilience Network failures should not stop logging.) Tj
+T*
+(Room-first persistence and background sync. Modern Android Assignment requires Compose and) Tj
+T*
+(Material 3. Material3 components, cards, buttons, dialogs, navigation. The design focuses on) Tj
+T*
+(daily usability rather than advanced accounting. The first screen after login shows usable) Tj
+T*
+(financial state and quick actions, so users do not need to hunt for the core workflows.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 16) Tj
+ET
+endstream
+endobj
+35 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 36 0 R >>
+endobj
+36 0 obj
+<< /Length 894 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(15. Annotated Wireframe 1 - Home / Dashboard Top Bar: user avatar and greeting. Avatar) Tj
+T*
+/F1 10 Tf
+(Profile & Settings. Balance Card: net balance, total income, and total expenses in LKR. Goal) Tj
+T*
+(Card: active MacBook goal, progress percentage, and boost actions. Quick Actions: Add) Tj
+T*
+(Expense, Add Income, Transaction History, Goal Tracker. Spending Overview: category totals) Tj
+T*
+(and visual progress indicators. Annotation Purpose A1 Balance card Immediately answers "how) Tj
+T*
+(much money do I have after income and expenses?" A2 Goal card Keeps the MacBook Pro target) Tj
+T*
+(visible every time the app opens. A3 Quick actions Reduces friction by making the main) Tj
+T*
+(workflows one tap away. A4 Spending overview Gives a first-week understanding of where) Tj
+T*
+(spending is concentrated.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 17) Tj
+ET
+endstream
+endobj
+37 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 38 0 R >>
+endobj
+38 0 obj
+<< /Length 752 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(16. Annotated Wireframe 2 - Add Income Amount Field: enter raw amount. Currency Select) Tj
+T*
+/F1 10 Tf
+(LKR, USD, USDT. Income Type Selector: Salary, Freelance, Crypto. Conversion Preview:) Tj
+T*
+(original amount approximately equals converted LKR amount. Save Income Button: saves) Tj
+T*
+(transaction Room-first and syncs to Firestore. Smart Savings Dialog: optional routing of) Tj
+T*
+(percentage toward active goal. This screen targets Kavindu's irregular and multi-currency) Tj
+T*
+(income problem. Instead of requiring him to calculate LKR totals manually from multiple) Tj
+T*
+(apps, the screen records the original amount and the converted baseAmountLKR in one flow.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 18) Tj
+ET
+endstream
+endobj
+39 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 40 0 R >>
+endobj
+40 0 obj
+<< /Length 659 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(17. Annotated Wireframe 3 - Add Expense Amount Field with LKR label. Quick Amount Chip) Tj
+T*
+/F1 10 Tf
+(common amounts based on selected category. Category Grid: Food, Transport, Coffee, Bills,) Tj
+T*
+(Health, Shopping, etc. Date Selector: Today, Yesterday, or Other. Recurring Toggle: auto-log) Tj
+T*
+(future weekly/monthly payments. Optional Note Field. Add Expense Button. The expense screen) Tj
+T*
+(is designed to be fast enough for repeated daily use. Broad committed and discretionary) Tj
+T*
+(categories support the dashboard without forcing complex accounting behaviour.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 19) Tj
+ET
+endstream
+endobj
+41 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 42 0 R >>
+endobj
+42 0 obj
+<< /Length 723 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(18. Annotated Wireframe 4 - Goal Tracker and Profile Goal Header: goal title and statu) Tj
+T*
+/F1 10 Tf
+(Progress Bar: percentage of target reached. Stats Cards: saved amount, target amount, months) Tj
+T*
+(left, monthly need. Boost Buttons: LKR 500, 1000, 5000, or custom amount. Profile Settings:) Tj
+T*
+(display name, email, base currency, savings percentage, reminders. Logout Button. The goal) Tj
+T*
+(tracker makes the MacBook fund concrete by showing not only progress but also the monthly) Tj
+T*
+(amount needed. The profile screen supports identity and financial preferences, including) Tj
+T*
+(base currency and auto-savings percentage.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 20) Tj
+ET
+endstream
+endobj
+43 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 44 0 R >>
+endobj
+44 0 obj
+<< /Length 1220 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(19. Design Justifications 19.1 MVVM with Repository MVVM suits Compose because UI reco) Tj
+T*
+/F1 10 Tf
+(from state. ViewModels expose StateFlow, repositories hide Firebase/Room/API details, and) Tj
+T*
+(composables remain focused on rendering and events. 19.2 Flat Transactions Collection Income) Tj
+T*
+(and expense records are stored in a shared transactions collection. This supports one) Tj
+T*
+(chronological feed and simple dashboard totals. The type field distinguishes income from) Tj
+T*
+(expense. 19.3 Store baseAmountLKR Storing baseAmountLKR avoids recalculating historical) Tj
+T*
+(values and keeps dashboard aggregation fast. The exchangeRate field preserves the conversion) Tj
+T*
+(context used at the time of entry. 19.4 Room-first Persistence Room-first writes make the) Tj
+T*
+(app responsive and offline-tolerant. Firestore sync happens later without blocking the) Tj
+T*
+(user's immediate logging action. 19.5 Koin Dependency Injection Koin provides shared) Tj
+T*
+(dependencies such as FirebaseAuth, FirebaseFirestore, Room DAOs, repositories, and) Tj
+T*
+(ViewModels, reducing manual object creation and improving testability.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 21) Tj
+ET
+endstream
+endobj
+45 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 46 0 R >>
+endobj
+46 0 obj
+<< /Length 1064 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(20. Implementation Status and Limitations 20.1 Implemented Firebase email/password) Tj
+T*
+/F1 10 Tf
+(authentication. Forgot password and Google Sign-In. Firestore-backed user profiles,) Tj
+T*
+(transactions, and goals. Room local transactions and recurring expense templates. Income) Tj
+T*
+(flow with live currency conversion. Expense flow with quick categories, dates, recurring) Tj
+T*
+(setup, and notes. Dashboard and transaction history. Goal tracker and profile/settings.) Tj
+T*
+(WorkManager sync and recurring expense workers. 20.2 Known Limitations Exchange-rate) Tj
+T*
+(responses are not cached locally yet. Firestore rules currently check ownership but do not) Tj
+T*
+(deeply validate field types. Some ViewModel wiring can be cleaned further for full DI) Tj
+T*
+(consistency. Unit and instrumented test coverage is minimal. These limitations do not remove) Tj
+T*
+(the core value of the application, but they are useful to mention honestly during a) Tj
+T*
+(technical discussion.) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 22) Tj
+ET
+endstream
+endobj
+47 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 49 0 R /F2 50 0 R >> >> /Contents 48 0 R >>
+endobj
+48 0 obj
+<< /Length 1045 >>
+stream
+BT
+/F1 10 Tf
+50 790 Td
+14 TL
+/F2 15 Tf
+(21. Conclusion FinPilot is designed as a scenario-specific personal finance app for Ka) Tj
+T*
+/F1 10 Tf
+(Silva. It focuses on the problems that caused previous tools to fail: multi-source income,) Tj
+T*
+(invisible discretionary spending, low tolerance for manual entry, and a savings goal that) Tj
+T*
+(was not connected to everyday behaviour. The implementation uses a modern Android stack:) Tj
+T*
+(Kotlin, Jetpack Compose, Navigation Compose, MVVM, StateFlow, Coroutines, Firebase) Tj
+T*
+(Authentication, Firestore, Room, Retrofit, WorkManager, and Koin. The architecture separates) Tj
+T*
+(UI, ViewModels, repositories, and data sources while supporting offline-first transaction) Tj
+T*
+(capture and background cloud sync. The system therefore meets the main technical constraints) Tj
+T*
+(of the SE3092 assignment and provides a credible product that could improve Kavindu's) Tj
+T*
+(financial clarity within the first week of use. End of Technical Design Document) Tj
+T*
+/F1 9 Tf
+0 -16 Td
+(Page 23) Tj
+ET
+endstream
+endobj
+49 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+50 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 51
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000267 00000 n 
+0000000405 00000 n 
+0000001026 00000 n 
+0000001164 00000 n 
+0000002033 00000 n 
+0000002171 00000 n 
+0000003706 00000 n 
+0000003845 00000 n 
+0000005249 00000 n 
+0000005389 00000 n 
+0000006794 00000 n 
+0000006934 00000 n 
+0000008413 00000 n 
+0000008553 00000 n 
+0000010021 00000 n 
+0000010161 00000 n 
+0000011244 00000 n 
+0000011384 00000 n 
+0000013060 00000 n 
+0000013200 00000 n 
+0000014420 00000 n 
+0000014560 00000 n 
+0000015440 00000 n 
+0000015580 00000 n 
+0000016743 00000 n 
+0000016883 00000 n 
+0000017958 00000 n 
+0000018098 00000 n 
+0000019442 00000 n 
+0000019582 00000 n 
+0000020927 00000 n 
+0000021067 00000 n 
+0000022271 00000 n 
+0000022411 00000 n 
+0000023357 00000 n 
+0000023497 00000 n 
+0000024301 00000 n 
+0000024441 00000 n 
+0000025152 00000 n 
+0000025292 00000 n 
+0000026067 00000 n 
+0000026207 00000 n 
+0000027480 00000 n 
+0000027620 00000 n 
+0000028737 00000 n 
+0000028877 00000 n 
+0000029975 00000 n 
+0000030046 00000 n 
+trailer
+<< /Size 51 /Root 1 0 R >>
+startxref
+30122
+%%EOF
