@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -215,23 +218,33 @@ private fun AddIncomeScreenContent(
         }
     }
 
+    val statusBarHeightDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
-        ) {
-            Spacer(modifier = Modifier.height(48.dp))
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ── Fixed Toolbar Header ───────────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = statusBarHeightDp + 16.dp, bottom = 12.dp)
+            ) {
+                HeaderSection(onClose = onClose)
+            }
 
-            HeaderSection(onClose = onClose)
-
-            Spacer(modifier = Modifier.height(28.dp))
+            // ── Scrollable Content Area ───────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp)
+            ) {
 
             Text(text = "Amount", color = LabelGray, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
@@ -304,6 +317,7 @@ private fun AddIncomeScreenContent(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }

@@ -37,6 +37,7 @@ import org.koin.androidx.compose.koinViewModel
 import com.example.pbd.ui.screens.dashboard.DashboardViewModel
 import com.example.pbd.ui.screens.dashboard.components.GoalCard
 
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.pbd.ui.screens.dashboard.components.SpendingOverview
 import com.example.pbd.ui.screens.dashboard.components.IncomeOverview
 
@@ -75,32 +76,59 @@ fun HomeScreen(
                 CircularProgressIndicator(color = AccentPurple)
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp)
-            ) {
-                Spacer(Modifier.height(48.dp))
+            val scrollState = rememberScrollState()
+            val scrollOffset = scrollState.value.toFloat()
+            val fadeThreshold = 600f
+            val alpha = (1f - (scrollOffset / fadeThreshold)).coerceIn(0f, 1f)
+            val parallaxY = scrollOffset * 0.5f
+
+            val statusBarHeightDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 32.dp)
+                ) {
+                    Spacer(Modifier.height(statusBarHeightDp + 16.dp))
 
                 // ── Top bar ──────────────────────────────────────────────────────
-                TopBar(
-                    userName = uiState.userName,
-                    onAvatarClick = { navController.navigate(Screen.Profile.route) }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            this.alpha = alpha
+                            this.translationY = parallaxY
+                        }
+                ) {
+                    TopBar(
+                        userName = uiState.userName,
+                        onAvatarClick = { navController.navigate(Screen.Profile.route) }
+                    )
+                }
 
                 Spacer(Modifier.height(24.dp))
 
                 // ── Balance card ─────────────────────────────────────────────────
-                BalanceCard(
-                    balance = uiState.netBalance,
-                    income = uiState.totalIncome,
-                    expenses = uiState.totalExpenses,
-                    onCardClick = { navController.navigate(Screen.Dashboard.route) },
-                    onIncomeClick = { navController.navigate(Screen.TransactionHistory.createRoute("income")) },
-                    onExpensesClick = { navController.navigate(Screen.TransactionHistory.createRoute("expense")) }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            this.alpha = alpha
+                            this.translationY = parallaxY
+                        }
+                ) {
+                    BalanceCard(
+                        balance = uiState.netBalance,
+                        income = uiState.totalIncome,
+                        expenses = uiState.totalExpenses,
+                        onCardClick = { navController.navigate(Screen.Dashboard.route) },
+                        onIncomeClick = { navController.navigate(Screen.TransactionHistory.createRoute("income")) },
+                        onExpensesClick = { navController.navigate(Screen.TransactionHistory.createRoute("expense")) }
+                    )
+                }
 
                 Spacer(Modifier.height(24.dp))
 
@@ -260,7 +288,26 @@ fun HomeScreen(
                     IncomeOverview(incomeBreakdown = uiState.incomeBreakdown)
                 }
             }
+
+            // Fixed Top Gradient Overlay to fade content going under status bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(statusBarHeightDp + 16.dp)
+                    .align(Alignment.TopCenter)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                BgDark,
+                                BgDark.copy(alpha = 0.95f),
+                                BgDark.copy(alpha = 0.7f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
         }
+    }
     }
 }
 

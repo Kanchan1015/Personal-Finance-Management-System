@@ -39,23 +39,21 @@ fun DashboardScreen(
         return
     }
 
+    val statusBarHeightDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // ── Toolbar Header ───────────────────────────────────────────────
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ── Fixed Toolbar Header ───────────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = statusBarHeightDp + 16.dp, bottom = 12.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -92,12 +90,22 @@ fun DashboardScreen(
                 }
             }
 
-            // Balance card
-            BalanceCard(
-                totalBalance = uiState.netBalance,
-                totalIncome = uiState.totalIncome,
-                totalExpenses = uiState.totalExpenses
-            )
+            // ── Scrollable Content Area ───────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Balance card
+                BalanceCard(
+                    totalBalance = uiState.netBalance,
+                    totalIncome = uiState.totalIncome,
+                    totalExpenses = uiState.totalExpenses
+                )
 
         // Goal card
         uiState.activeGoal?.let { goal ->
@@ -190,6 +198,7 @@ fun DashboardScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
     }
-}
 }
