@@ -5,5 +5,7 @@ data class User(
     val name: String = "",
     val email: String = "",
     val baseCurrency: String = "LKR",
-    val totalBalanceLKR: Double = 0.0
+    val totalBalanceLKR: Double = 0.0,
+    val savingsPercentage: Int = 20,
+    val notificationsEnabled: Boolean = true
 )

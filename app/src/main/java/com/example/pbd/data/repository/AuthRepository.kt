@@ -11,6 +11,7 @@ interface AuthRepository {
     suspend fun getUserProfile(userId: String): Result<User>
     fun getCurrentUserId(): String?
     fun logout()
+    suspend fun updateUserProfile(user: User): Result<Unit>
 }
 
 class AuthRepositoryImpl(
@@ -78,5 +79,14 @@ class AuthRepositoryImpl(
 
     override fun logout() {
         auth.signOut()
+    }
+
+    override suspend fun updateUserProfile(user: User): Result<Unit> {
+        return try {
+            usersCollection.document(user.id).set(user).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
