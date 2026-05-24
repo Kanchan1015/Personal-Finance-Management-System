@@ -1,5 +1,6 @@
 package com.example.pbd.ui.screens.auth
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pbd.data.model.User
@@ -31,9 +32,16 @@ class AuthViewModel(
 
     // Handles user login and updates state based on the result
     fun login(email: String, password: String) {
+        val trimmedEmail = email.trim()
+        val validationError = validateLogin(trimmedEmail, password)
+        if (validationError != null) {
+            _authState.value = AuthState.Error(validationError)
+            return
+        }
+
         _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val result = authRepository.login(email, password)
+            val result = authRepository.login(trimmedEmail, password)
             result.fold(
                 onSuccess = { user -> _authState.value = AuthState.Success(user) },
                 onFailure = { e -> _authState.value = AuthState.Error(e.message ?: "An unknown error occurred during login") }
@@ -43,9 +51,17 @@ class AuthViewModel(
 
     // Handles user registration, creates Firestore profile, and updates state
     fun register(name: String, email: String, password: String) {
+        val trimmedName = name.trim()
+        val trimmedEmail = email.trim()
+        val validationError = validateRegistration(trimmedName, trimmedEmail, password)
+        if (validationError != null) {
+            _authState.value = AuthState.Error(validationError)
+            return
+        }
+
         _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val result = authRepository.register(name, email, password)
+            val result = authRepository.register(trimmedName, trimmedEmail, password)
             result.fold(
                 onSuccess = { user -> _authState.value = AuthState.Success(user) },
                 onFailure = { e -> _authState.value = AuthState.Error(e.message ?: "An unknown error occurred during registration") }
@@ -70,8 +86,9 @@ class AuthViewModel(
 
     fun sendPasswordResetEmail(email: String) {
         val trimmedEmail = email.trim()
-        if (trimmedEmail.isEmpty()) {
-            _authState.value = AuthState.Error("Enter your email address first")
+        val validationError = validatePasswordReset(trimmedEmail)
+        if (validationError != null) {
+            _authState.value = AuthState.Error(validationError)
             return
         }
 
@@ -98,5 +115,41 @@ class AuthViewModel(
     fun logout() {
         authRepository.logout()
         _authState.value = AuthState.Idle
+    }
+
+    private fun validateLogin(email: String, password: String): String? {
+        return when {
+            email.isEmpty() -> "Email is required"
+            !isValidEmail(email) -> "Enter a valid email address"
+            password.isEmpty() -> "Password is required"
+            else -> null
+        }
+    }
+
+    private fun validateRegistration(name: String, email: String, password: String): String? {
+        return when {
+            name.isEmpty() -> "Full name is required"
+            email.isEmpty() -> "Email is required"
+            !isValidEmail(email) -> "Enter a valid email address"
+            password.isEmpty() -> "Password is required"
+            password.length < MIN_PASSWORD_LENGTH -> "Password must be at least $MIN_PASSWORD_LENGTH characters"
+            else -> null
+        }
+    }
+
+    private fun validatePasswordReset(email: String): String? {
+        return when {
+            email.isEmpty() -> "Enter your email address first"
+            !isValidEmail(email) -> "Enter a valid email address"
+            else -> null
+        }
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private companion object {
+        const val MIN_PASSWORD_LENGTH = 6
     }
 }
