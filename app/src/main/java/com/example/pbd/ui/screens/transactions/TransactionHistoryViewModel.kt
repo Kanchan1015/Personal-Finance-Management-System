@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pbd.data.local.AppDatabase
 import com.example.pbd.data.model.Transaction
-import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.FinanceRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,14 +22,12 @@ class TransactionHistoryViewModel(application: Application) : AndroidViewModel(a
         firestore = FirebaseFirestore.getInstance()
     )
 
-    // Flow that retrieves real transactions from the local database / backend and exposes them sorted
+    // Flow that retrieves all transactions (both INCOME and EXPENSE) from the local
+    // database and exposes them sorted newest-first.
     val transactionsState: StateFlow<List<Transaction>> = repository.allTransactions
         .map { dbTransactions ->
-            // Filter DB transactions to only include expenses
-            val dbExpenses = dbTransactions.filter { it.type == TransactionType.EXPENSE }
-            
-            // Sort by timestamp descending
-            dbExpenses.sortedByDescending { it.timestamp }
+            // Sort by timestamp descending — show newest first
+            dbTransactions.sortedByDescending { it.timestamp }
         }
         .stateIn(
             scope = viewModelScope,

@@ -29,6 +29,7 @@ data class DashboardUiState(
 )
 
 class DashboardViewModel(
+    private val dashboardRepository: DashboardRepository,
     private val repository: DashboardRepository,
     private val goalRepository: GoalRepository,
     private val financeRepository: FinanceRepository,
@@ -46,7 +47,7 @@ class DashboardViewModel(
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            val name = repository.getUserName()
+            val name = dashboardRepository.getUserName()
             _uiState.value = _uiState.value.copy(userName = name)
         }
     }
@@ -88,7 +89,7 @@ class DashboardViewModel(
 
     private fun loadGoals() {
         viewModelScope.launch {
-            repository.getGoals().collect { goals ->
+            dashboardRepository.getGoals().collect { goals ->
                 val activeGoal = goals.firstOrNull()
                 val progress = if (activeGoal != null && activeGoal.targetAmount > 0) {
                     (activeGoal.currentSaved / activeGoal.targetAmount).toFloat()
