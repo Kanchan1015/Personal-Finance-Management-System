@@ -9,6 +9,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+import android.content.Context
+import com.example.pbd.data.notification.NotificationPreferences
+import com.example.pbd.data.notification.DailyReminderReceiver
+
 // State for the Profile UI
 sealed class ProfileState {
     object Loading : ProfileState()
@@ -17,11 +21,19 @@ sealed class ProfileState {
 }
 
 class ProfileViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val preferences: NotificationPreferences,
+    private val context: Context
 ) : ViewModel() {
 
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Loading)
     val profileState: StateFlow<ProfileState> = _profileState.asStateFlow()
+
+    val budgetThreshold: Double get() = preferences.budgetThreshold
+    val largeTransactionThreshold: Double get() = preferences.largeTransactionThreshold
+    val dailySummaryHour: Int get() = preferences.dailySummaryHour
+    val dailySummaryMinute: Int get() = preferences.dailySummaryMinute
+    val notificationsEnabled: Boolean get() = preferences.notificationsEnabled
 
     init {
         // Automatically load the profile when this screen is opened
@@ -53,7 +65,11 @@ class ProfileViewModel(
         name: String,
         baseCurrency: String,
         savingsPercentage: Int,
-        notificationsEnabled: Boolean
+        notificationsEnabled: Boolean,
+        budget: Double,
+        largeTx: Double,
+        hour: Int,
+        minute: Int
     ) {
         val currentState = _profileState.value
         if (currentState is ProfileState.Success) {
@@ -64,6 +80,17 @@ class ProfileViewModel(
                 notificationsEnabled = notificationsEnabled
             )
             _profileState.value = ProfileState.Loading
+
+            // Save notification preferences
+            preferences.budgetThreshold = budget
+            preferences.largeTransactionThreshold = largeTx
+            preferences.dailySummaryHour = hour
+            preferences.dailySummaryMinute = minute
+            preferences.notificationsEnabled = notificationsEnabled
+
+            // Reschedule the daily summary notification alarm with new times/settings immediately
+            DailyReminderReceiver.scheduleNextAlarm(context)
+
             viewModelScope.launch {
                 val result = authRepository.updateUserProfile(updatedUser)
                 result.fold(

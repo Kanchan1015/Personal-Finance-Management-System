@@ -15,4 +15,5 @@ sealed class Screen(val route: String) {
     object GoalDetail : Screen("goal_detail/{goalId}") {
         fun createRoute(goalId: String) = "goal_detail/$goalId"
     }
+    object NotificationCenter : Screen("notification_center")
 }

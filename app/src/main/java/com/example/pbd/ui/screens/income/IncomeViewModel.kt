@@ -13,9 +13,8 @@ import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.FinanceRepository
 import com.example.pbd.data.repository.GoalRepository
+import com.example.pbd.data.repository.AuthRepository
 import com.example.pbd.data.model.User
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +23,7 @@ import kotlinx.coroutines.launch
 class IncomeViewModel(
     private val repository: FinanceRepository,
     private val goalRepository: GoalRepository,
-    private val auth: FirebaseAuth
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     private companion object {
         const val TAG = "IncomeViewModel"
@@ -48,17 +47,15 @@ class IncomeViewModel(
     }
 
     private fun loadUserProfilePreferences() {
-        val currentUserId = auth.currentUser?.uid ?: return
+        val currentUserId = authRepository.getCurrentUserId() ?: return
         viewModelScope.launch {
             try {
-                FirebaseFirestore.getInstance().collection("users").document(currentUserId)
-                    .get()
-                    .addOnSuccessListener { doc ->
-                        val user = doc.toObject(User::class.java)
-                        if (user != null) {
-                            _uiState.value = _uiState.value.copy(savingsPercentage = user.savingsPercentage)
-                        }
-                    }
+                val result = authRepository.getUserProfile(currentUserId)
+                result.onSuccess { user ->
+                    _uiState.value = _uiState.value.copy(savingsPercentage = user.savingsPercentage)
+                }.onFailure { e ->
+                    Log.e(TAG, "Failed to load user profile preferences", e)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load user profile preferences", e)
             }
@@ -167,7 +164,7 @@ class IncomeViewModel(
             )
 
             // Get the real Firebase Auth UID — the auth guard guarantees this is non-null
-            val userId = auth.currentUser?.uid
+            val userId = authRepository.getCurrentUserId()
             if (userId == null) {
                 _uiState.value = currentState.copy(
                     isLoading = false,
@@ -214,7 +211,7 @@ class IncomeViewModel(
     }
 
     fun routeSavingsToGoal(amountLKR: Double, goal: Goal, percent: Int = 20) {
-        val currentUserId = auth.currentUser?.uid ?: return
+        val currentUserId = authRepository.getCurrentUserId() ?: return
         val routedAmount = amountLKR * (percent / 100f)
         viewModelScope.launch {
             try {

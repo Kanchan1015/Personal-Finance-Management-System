@@ -5,6 +5,17 @@
     <!-- Required for Firebase Firestore and WorkManager sync to reach the internet -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Push notifications (required on Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Required to re-schedule AlarmManager alarms after device reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Exact alarm for reliable daily spending summary (Android 12+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
     <application
         android:name=".PbdApplication"
         android:allowBackup="true"
@@ -16,6 +27,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PBD"
         tools:targetApi="31">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -24,10 +36,25 @@
             android:theme="@style/Theme.PBD">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Receives AlarmManager daily spending summary alarm -->
+        <receiver
+            android:name=".data.notification.DailyReminderReceiver"
+            android:exported="false" />
+
+        <!-- Reschedules AlarmManager alarms after device reboot -->
+        <receiver
+            android:name=".data.notification.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
-</manifest>
+</manifest>
+

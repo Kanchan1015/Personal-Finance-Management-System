@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavHostController
 import com.example.pbd.data.model.Transaction
 import java.text.SimpleDateFormat
@@ -81,11 +81,7 @@ enum class SortOrder {
 fun TransactionHistoryScreen(
     navController: NavHostController,
     mode: String = "all",
-    viewModel: TransactionHistoryViewModel = viewModel(
-        factory = TransactionHistoryViewModelFactory(
-            LocalContext.current.applicationContext as Application
-        )
-    )
+    viewModel: TransactionHistoryViewModel = koinViewModel()
 ) {
     val transactions by viewModel.transactionsState.collectAsState()
     var selectedFilter by remember { mutableStateOf(FilterPeriod.ALL) }
