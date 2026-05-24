@@ -30,7 +30,6 @@ data class DashboardUiState(
 
 class DashboardViewModel(
     private val dashboardRepository: DashboardRepository,
-    private val repository: DashboardRepository,
     private val goalRepository: GoalRepository,
     private val financeRepository: FinanceRepository,
     private val auth: FirebaseAuth
