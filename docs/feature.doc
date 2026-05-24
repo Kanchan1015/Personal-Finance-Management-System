@@ -1,0 +1,288 @@
+Income & Currency Engine Flow
+
+  This feature starts when the user opens app/src/main/java/com/example/pbd/ui/screens/
+  income/AddIncomeScreen.kt:1 from the Home quick action and ends with a normalized
+  income record being stored locally, synced to Firestore, and later used by the
+  dashboard through baseAmountLKR.
+
+  ## 1. UI Layer
+
+  What the user sees
+
+  - The Add Income screen has:
+      - amount input
+      - currency selector: LKR, USD, USDT
+      - income type selector: Salary, Freelance, Crypto
+      - conversion preview card
+      - Save Income button
+
+  What interactions happen
+
+  - As soon as the user enters a valid amount and picks a currency, the screen
+    automatically asks for conversion data.
+  - This is triggered from the screen itself through onFetchExchangeRate(...), which
+    forwards the request to IncomeViewModel.
+
+  How conversion preview works
+
+  - If the currency is LKR, the preview is immediate: entered amount = LKR amount.
+  - If the currency is foreign, the card shows:
+      - a loading state: “Fetching live exchange rate...”
+      - then a preview like 50 USD ≈ 15000 LKR
+      - and the rate line like 1 USD = ... LKR
+  - If conversion fails, the preview card shows the error.
+  - The save button stays disabled while:
+      - the amount is invalid
+      - conversion is still loading
+      - conversion failed and no LKR value is resolved
+
+  Main file: app/src/main/java/com/example/pbd/ui/screens/income/AddIncomeScreen.kt:1
+
+  ## 2. ViewModel Layer
+
+  What IncomeViewModel handles
+
+  - IncomeViewModel is the controller for this whole feature.
+  - It manages:
+      - exchange-rate loading
+      - converted LKR amount
+      - validation errors
+      - save loading/success/error state
+
+  How state updates work
+
+  - The screen observes a single StateFlow of app/src/main/java/com/example/pbd/ui/
+    screens/income/IncomeUiState.kt:1.
+  - That state contains:
+      - exchangeRate
+      - convertedAmountLKR
+      - isExchangeRateLoading
+      - isLoading
+      - isSuccess
+      - error messages
+
+  How conversion/save flow is controlled
+
+  - fetchExchangeRate(amount, currency)
+      - validates the amount
+      - handles direct LKR case locally
+      - otherwise asks the repository for the live rate
+      - stores both the rate and converted LKR value in UI state
+  - saveIncome(amount, currency, category)
+      - validates amount
+      - resolves the final exchange rate and final baseAmountLKR
+      - blocks saving if foreign-currency conversion is unavailable
+      - gets the logged-in Firebase user ID
+      - builds a Transaction
+      - sends it to FinanceRepository.saveIncome(...)
+
+  Main file: app/src/main/java/com/example/pbd/ui/screens/income/IncomeViewModel.kt:1
+
+  ## 3. Currency Conversion Flow
+
+  How exchange rates are fetched
+
+  - IncomeViewModel calls FinanceRepository.getExchangeRate(currency).
+  - FinanceRepository uses Retrofit through:
+      - app/src/main/java/com/example/pbd/data/remote/RetrofitClient.kt:1
+      - app/src/main/java/com/example/pbd/data/remote/ExchangeRateApi.kt:1
+  - The API endpoint returns a full exchange-rate response.
+
+  How conversion is calculated
+
+  - The repository fetches the selected base currency’s latest rates.
+  - It specifically extracts the LKR rate from the response.
+  - Then IncomeViewModel calculates:
+
+  convertedAmountLKR = amount * exchangeRate
+
+  How LKR values are generated
+
+  - For LKR input:
+      - exchangeRate = 1.0
+      - baseAmountLKR = amount
+  - For foreign currency:
+      - the fetched LKR rate is used
+      - the converted LKR result becomes the normalized amount stored for later totals
+
+  Important model: app/src/main/java/com/example/pbd/data/model/ExchangeRateResponse.kt:1
+
+  ## 4. Repository Flow
+
+  How FinanceRepository handles saving
+
+  - saveIncome(...) is a thin entry point.
+  - It forwards to the main save pipeline: saveTransaction(...).
+
+  Room-first behavior
+
+  - saveTransaction(...) always writes to Room first.
+  - That means the transaction is inserted into the local transactions table immediately.
+  - This is done through app/src/main/java/com/example/pbd/data/local/
+    TransactionDao.kt:1.
+
+  Firestore sync behavior
+
+  - After the Room insert, the repository starts a background Firestore upload.
+  - It sends the transaction to the transactions collection in Firestore using the same
+    transaction ID.
+  - If upload succeeds:
+      - Room marks that row as isSynced = true
+  - If upload fails:
+      - the row remains in Room with isSynced = false
+
+  Main file: app/src/main/java/com/example/pbd/data/repository/FinanceRepository.kt:1
+
+  ## 5. Offline Behavior
+
+  What happens without internet
+
+  - Saving still works because Room is written first.
+  - So the user can still add income offline.
+  - The app can show save success even before Firestore has finished syncing.
+
+  How retry/sync works later
+
+  - Unsynced transactions remain stored locally with isSynced = false.
+  - app/src/main/java/com/example/pbd/data/worker/SyncWorker.kt:1 periodically retries
+    those records.
+  - app/src/main/java/com/example/pbd/PbdApplication.kt:1 schedules that worker every 15
+    minutes with a network-required constraint.
+  - When internet is available, the worker calls
+    FinanceRepository.syncUnsyncedTransactions() and pushes pending items to Firestore.
+
+  Important practical note:
+
+  - This feature is offline-safe for saving.
+  - But the dashboard reads from Firestore, not Room, so a newly saved offline income
+    will not appear on the dashboard until sync succeeds.
+
+  ## 6. Dashboard/Data Usage
+
+  How saved converted values are later used
+
+  - The key field is baseAmountLKR.
+  - That is the normalized value used for totals, regardless of whether the original
+    income was in LKR, USD, or USDT.
+
+  How dashboard totals are calculated
+
+  - app/src/main/java/com/example/pbd/data/repository/DashboardRepository.kt:1 reads
+    transactions from Firestore for the current user.
+  - app/src/main/java/com/example/pbd/ui/screens/dashboard/DashboardViewModel.kt:1 then:
+      - sums baseAmountLKR for INCOME
+      - sums baseAmountLKR for EXPENSE
+      - calculates netBalance = income - expenses
+      - shows recent transactions
+
+  So the feature’s main design idea is:
+
+  - original amount and original currency are preserved
+  - normalized baseAmountLKR is used for analytics and balance calculations
+
+  ## 7. Important Models
+
+  Transaction
+
+  - Main financial record model.
+  - Stores:
+      - original amount
+      - original currency
+      - exchange rate used
+      - converted baseAmountLKR
+      - type (INCOME or EXPENSE)
+      - category
+      - timestamp
+      - sync status
+  - File: app/src/main/java/com/example/pbd/data/model/Transaction.kt:1
+
+  IncomeUiState
+
+  - UI state holder for the Add Income feature.
+  - Keeps both conversion state and save state in one place.
+  - File: app/src/main/java/com/example/pbd/ui/screens/income/IncomeUiState.kt:1
+
+  ExchangeRateResponse
+
+  - Represents the API response from the exchange-rate service.
+  - Holds:
+      - request result
+      - base currency code
+      - dynamic rates map
+  - File: app/src/main/java/com/example/pbd/data/model/ExchangeRateResponse.kt:1
+
+  ## 8. Overall Architecture Flow
+
+  Home Screen Quick Action
+  ↓
+  AddIncomeScreen (Compose UI)
+  ↓
+  IncomeViewModel
+  ↓
+  FinanceRepository
+  ↓
+  Room (save immediately)
+  ↓
+  Background Firestore upload
+  ↓
+  SyncWorker retries later if needed
+  ↓
+  DashboardRepository reads from Firestore
+  ↓
+  DashboardViewModel calculates totals using baseAmountLKR
+
+  ## Complete Feature Flow in Practical Steps
+
+  User opens Add Income screen
+  ↓
+  Enters amount
+  ↓
+  Selects currency and income type
+  ↓
+  UI triggers live conversion request
+  ↓
+  IncomeViewModel resolves exchange rate
+  ↓
+  LKR preview is shown
+  ↓
+  User taps Save Income
+  ↓
+  IncomeViewModel builds Transaction with:
+  - amount
+  - currency
+  - exchangeRate
+  - baseAmountLKR
+  - type = INCOME
+  ↓
+  FinanceRepository saves to Room first
+  ↓
+  Repository tries Firestore sync in background
+  ↓
+  If sync succeeds, local record is marked synced
+  ↓
+  If sync fails, record stays unsynced
+  ↓
+  SyncWorker retries later when internet is available
+  ↓
+  Firestore transactions are read by DashboardRepository
+  ↓
+  DashboardViewModel uses baseAmountLKR for income totals and balance
+
+  ## Short Summary
+
+  What makes this feature technically strong
+
+  - Clear UI -> ViewModel -> Repository flow
+  - Live conversion before save
+  - Normalized baseAmountLKR design, which makes totals simple and consistent
+  - Room-first saving gives offline-safe transaction capture
+  - Firestore sync is separated, so network delay does not block the form
+
+  Pending / future improvements
+
+  - Dashboard currently depends on Firestore only, so offline-saved incomes are not
+    instantly reflected there
+  - No local caching of exchange rates yet
+  - Firestore sync success is not directly exposed to the user as a separate status
+  - The sync path is simple periodic retry; it could be improved with stronger retry/
+    backoff reporting
