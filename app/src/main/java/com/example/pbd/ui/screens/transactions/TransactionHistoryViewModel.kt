@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class TransactionHistoryViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -34,6 +35,21 @@ class TransactionHistoryViewModel(application: Application) : AndroidViewModel(a
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    // Deletes a transaction by id from Room instantly; Firestore removal happens asynchronously.
+    fun deleteTransaction(id: String) {
+        viewModelScope.launch {
+            repository.deleteTransaction(id)
+        }
+    }
+
+    // Re-saves an edited transaction using the same id (Room REPLACE strategy).
+    // This updates the local record immediately and triggers an async Firestore push.
+    fun updateTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            repository.saveTransaction(transaction)
+        }
+    }
 }
 
 class TransactionHistoryViewModelFactory(private val application: Application) : ViewModelProvider.Factory {

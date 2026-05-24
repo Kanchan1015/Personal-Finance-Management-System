@@ -107,6 +107,21 @@ class FinanceRepository(
         }
     }
 
+    // Deletes a transaction by id from the local Room database immediately (offline-first).
+    // Then asynchronously tries to remove the document from Firestore in the background.
+    // If offline, the local delete still applies; the Firestore document will linger but
+    // will be overwritten on next sync if the user re-adds the same id.
+    suspend fun deleteTransaction(id: String) {
+        transactionDao.deleteTransactionById(id)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                firestore.collection("transactions").document(id).delete().await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     // Called by SyncWorker when the device comes back online.
     suspend fun syncUnsyncedTransactions() {
         val unsynced = transactionDao.getUnsyncedTransactions()
