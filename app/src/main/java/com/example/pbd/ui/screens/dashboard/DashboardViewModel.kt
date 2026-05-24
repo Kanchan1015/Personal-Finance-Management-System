@@ -4,8 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pbd.data.model.Goal
 import com.example.pbd.data.model.Transaction
+import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.DashboardRepository
+import com.example.pbd.data.repository.FinanceRepository
+import com.example.pbd.data.repository.GoalRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +28,12 @@ data class DashboardUiState(
     val userName: String = "User"
 )
 
-class DashboardViewModel(private val repository: DashboardRepository) : ViewModel() {
+class DashboardViewModel(
+    private val repository: DashboardRepository,
+    private val goalRepository: GoalRepository,
+    private val financeRepository: FinanceRepository,
+    private val auth: FirebaseAuth
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -44,7 +53,9 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
 
     private fun loadTransactions() {
         viewModelScope.launch {
-            repository.getTransactions().collect { transactions ->
+            val currentUserId = auth.currentUser?.uid ?: ""
+            financeRepository.allTransactions.collect { allTransactions ->
+                val transactions = allTransactions.filter { it.userId == currentUserId }
 
                 val income = transactions
                     .filter { it.type == TransactionType.INCOME }
@@ -88,6 +99,33 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                     activeGoal = activeGoal,
                     goalProgress = progress
                 )
+            }
+        }
+    }
+
+    fun boostActiveGoal(amount: Double) {
+        val activeGoal = _uiState.value.activeGoal ?: return
+        val currentUserId = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                // 1. Transactionally update the goal saved amount in Firestore
+                goalRepository.updateGoalSavedAmount(activeGoal.id, amount)
+
+                // 2. Save a companion Transaction
+                val companionTransaction = Transaction(
+                    userId = currentUserId,
+                    type = TransactionType.EXPENSE,
+                    amount = amount,
+                    currency = "LKR",
+                    exchangeRate = 1.0,
+                    baseAmountLKR = amount,
+                    category = TransactionCategory.SAVINGS,
+                    subCategory = "Savings",
+                    note = "Saved toward: ${activeGoal.title}"
+                )
+                financeRepository.saveTransaction(companionTransaction)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

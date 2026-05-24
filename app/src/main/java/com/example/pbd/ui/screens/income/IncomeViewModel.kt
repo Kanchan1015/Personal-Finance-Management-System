@@ -7,10 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pbd.data.local.AppDatabase
+import com.example.pbd.data.model.Goal
 import com.example.pbd.data.model.Transaction
 import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.FinanceRepository
+import com.example.pbd.data.repository.GoalRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,14 +20,30 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class IncomeViewModel(private val repository: FinanceRepository, private val auth: FirebaseAuth) : ViewModel() {
+class IncomeViewModel(
+    private val repository: FinanceRepository,
+    private val goalRepository: GoalRepository,
+    private val auth: FirebaseAuth
+) : ViewModel() {
     private companion object {
         const val TAG = "IncomeViewModel"
     }
 
-
     private val _uiState = MutableStateFlow(IncomeUiState())
     val uiState: StateFlow<IncomeUiState> = _uiState.asStateFlow()
+
+    init {
+        loadActiveGoal()
+    }
+
+    private fun loadActiveGoal() {
+        viewModelScope.launch {
+            goalRepository.getAllGoals().collect { goals ->
+                val activeGoal = goals.firstOrNull { it.status == "ACTIVE" }
+                _uiState.value = _uiState.value.copy(activeGoal = activeGoal)
+            }
+        }
+    }
 
     fun fetchExchangeRate(amount: Double, currency: String) {
         Log.d(TAG, "fetchExchangeRate requestedCurrency=$currency, amount=$amount")
@@ -173,8 +191,45 @@ class IncomeViewModel(private val repository: FinanceRepository, private val aut
         }
     }
 
+    fun routeSavingsToGoal(amountLKR: Double, goal: Goal, percent: Int = 20) {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val routedAmount = amountLKR * (percent / 100f)
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                
+                // 1. Transactionally update target goal currentSaved
+                goalRepository.updateGoalSavedAmount(goal.id, routedAmount)
+
+                // 2. Log a companion savings Transaction
+                val companionTransaction = Transaction(
+                    userId = currentUserId,
+                    type = TransactionType.EXPENSE,
+                    amount = routedAmount,
+                    currency = "LKR",
+                    exchangeRate = 1.0,
+                    baseAmountLKR = routedAmount,
+                    category = TransactionCategory.SAVINGS,
+                    subCategory = "Savings",
+                    note = "Routed ${percent}% of logged income to ${goal.title}"
+                )
+                repository.saveTransaction(companionTransaction)
+
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isRoutingSuccess = true
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Smart routing failed."
+                )
+            }
+        }
+    }
+
     fun resetState() {
-        _uiState.value = IncomeUiState()
+        val activeGoal = _uiState.value.activeGoal
+        _uiState.value = IncomeUiState(activeGoal = activeGoal)
     }
 }
-
