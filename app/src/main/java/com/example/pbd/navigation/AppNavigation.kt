@@ -42,8 +42,14 @@ fun AppNavigation(navController: NavHostController) {
         composable(Screen.Dashboard.route) {
             DashboardScreen(navController = navController)
         }
-        composable(Screen.TransactionHistory.route) {
-            TransactionHistoryScreen(navController = navController)
+        composable(
+            route = Screen.TransactionHistory.route,
+            arguments = listOf(
+                navArgument("mode") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val mode = backStackEntry.arguments?.getString("mode") ?: "all"
+            TransactionHistoryScreen(navController = navController, mode = mode)
         }
         composable(
             route = Screen.GoalDetail.route,

@@ -123,7 +123,7 @@ fun GoalCard(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Frictionless Goal Booster",
+                    text = "Goal Booster",
                     color = TextSecondary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
