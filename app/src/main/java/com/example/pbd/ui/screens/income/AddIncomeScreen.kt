@@ -133,7 +133,8 @@ fun AddIncomeScreen(
                 viewModel.saveIncome(
                     amount = amount,
                     currency = currency,
-                    category = incomeType.toTransactionCategory()
+                    category = incomeType.toTransactionCategory(),
+                    subCategory = incomeType
                 )
             }
         )

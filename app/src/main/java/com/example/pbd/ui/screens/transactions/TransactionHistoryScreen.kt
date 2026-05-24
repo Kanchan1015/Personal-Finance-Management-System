@@ -51,9 +51,18 @@ enum class FilterPeriod {
     ALL, TODAY, WEEK, MONTH
 }
 
+enum class SortFactor {
+    DATE, PRICE
+}
+
+enum class SortOrder {
+    ASCENDING, DESCENDING
+}
+
 @Composable
 fun TransactionHistoryScreen(
     navController: NavHostController,
+    mode: String = "all",
     viewModel: TransactionHistoryViewModel = viewModel(
         factory = TransactionHistoryViewModelFactory(
             LocalContext.current.applicationContext as Application
@@ -62,16 +71,25 @@ fun TransactionHistoryScreen(
 ) {
     val transactions by viewModel.transactionsState.collectAsState()
     var selectedFilter by remember { mutableStateOf(FilterPeriod.ALL) }
+    var selectedSortFactor by remember { mutableStateOf(SortFactor.DATE) }
+    var selectedSortOrder by remember { mutableStateOf(SortOrder.DESCENDING) }
+    var showFilterDialog by remember { mutableStateOf(false) }
 
-    // Filter transactions based on selected tab
-    val filteredTransactions = remember(transactions, selectedFilter) {
+    // Filter transactions based on selected tab and history mode (expense, income, or all)
+    val filteredTransactions = remember(transactions, selectedFilter, selectedSortFactor, selectedSortOrder) {
+        val baseFiltered = when (mode) {
+            "expense" -> transactions.filter { it.type == TransactionType.EXPENSE }
+            "income" -> transactions.filter { it.type == TransactionType.INCOME }
+            else -> transactions
+        }
+        
         val now = System.currentTimeMillis()
         val calendar = Calendar.getInstance()
         
-        when (selectedFilter) {
-            FilterPeriod.ALL -> transactions
+        val periodFiltered = when (selectedFilter) {
+            FilterPeriod.ALL -> baseFiltered
             FilterPeriod.TODAY -> {
-                transactions.filter {
+                baseFiltered.filter {
                     val txCal = Calendar.getInstance().apply { timeInMillis = it.timestamp }
                     txCal.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
                             txCal.get(Calendar.DAY_OF_YEAR) == calendar.get(Calendar.DAY_OF_YEAR)
@@ -79,13 +97,31 @@ fun TransactionHistoryScreen(
             }
             FilterPeriod.WEEK -> {
                 val sevenDaysAgo = now - (7L * 24 * 60 * 60 * 1000)
-                transactions.filter { it.timestamp >= sevenDaysAgo }
+                baseFiltered.filter { it.timestamp >= sevenDaysAgo }
             }
             FilterPeriod.MONTH -> {
-                transactions.filter {
+                baseFiltered.filter {
                     val txCal = Calendar.getInstance().apply { timeInMillis = it.timestamp }
                     txCal.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
                             txCal.get(Calendar.MONTH) == calendar.get(Calendar.MONTH)
+                }
+            }
+        }
+
+        // Apply Sorting
+        when (selectedSortFactor) {
+            SortFactor.DATE -> {
+                if (selectedSortOrder == SortOrder.DESCENDING) {
+                    periodFiltered.sortedByDescending { it.timestamp }
+                } else {
+                    periodFiltered.sortedBy { it.timestamp }
+                }
+            }
+            SortFactor.PRICE -> {
+                if (selectedSortOrder == SortOrder.DESCENDING) {
+                    periodFiltered.sortedByDescending { it.baseAmountLKR }
+                } else {
+                    periodFiltered.sortedBy { it.baseAmountLKR }
                 }
             }
         }
@@ -112,12 +148,17 @@ fun TransactionHistoryScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             // ── Toolbar Header ───────────────────────────────────────────────
-            HeaderRow(onBackClick = { navController.popBackStack() })
+            HeaderRow(
+                mode = mode,
+                onBackClick = { navController.popBackStack() },
+                onFilterClick = { showFilterDialog = true }
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             // ── Gradient Summary Card ────────────────────────────────────────
             TotalSummaryCard(
+                mode = mode,
                 totalIncome = totalIncome,
                 totalExpenses = totalExpenses,
                 count = filteredTransactions.size
@@ -157,26 +198,52 @@ fun TransactionHistoryScreen(
                     }
                 }
             } else {
-                // Group transactions by date string
-                val groupedTransactions = remember(filteredTransactions) {
-                    filteredTransactions.groupBy { getGroupHeader(it.timestamp) }
-                }
+                if (selectedSortFactor == SortFactor.DATE) {
+                    // Group transactions by date string when sorting by date
+                    val groupedTransactions = remember(filteredTransactions) {
+                        filteredTransactions.groupBy { getGroupHeader(it.timestamp) }
+                    }
 
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp)
-                ) {
-                    groupedTransactions.forEach { (dateHeader, txs) ->
-                        item {
-                            DateHeaderItem(title = dateHeader)
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 32.dp)
+                    ) {
+                        groupedTransactions.forEach { (dateHeader, txs) ->
+                            item {
+                                DateHeaderItem(title = dateHeader)
+                            }
+                            items(txs, key = { it.id }) { transaction ->
+                                TransactionListItem(transaction = transaction)
+                            }
                         }
-                        items(txs, key = { it.id }) { transaction ->
+                    }
+                } else {
+                    // Continuous sequential flat list when sorting by amount
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 32.dp)
+                    ) {
+                        items(filteredTransactions, key = { it.id }) { transaction ->
                             TransactionListItem(transaction = transaction)
                         }
                     }
                 }
             }
+        }
+
+        if (showFilterDialog) {
+            FilterSortDialog(
+                currentFactor = selectedSortFactor,
+                currentOrder = selectedSortOrder,
+                onDismiss = { showFilterDialog = false },
+                onApply = { factor, order ->
+                    selectedSortFactor = factor
+                    selectedSortOrder = order
+                    showFilterDialog = false
+                }
+            )
         }
     }
 }
@@ -184,7 +251,11 @@ fun TransactionHistoryScreen(
 // ── Sub-Composables ───────────────────────────────────────────────────────────
 
 @Composable
-private fun HeaderRow(onBackClick: () -> Unit) {
+private fun HeaderRow(
+    mode: String,
+    onBackClick: () -> Unit,
+    onFilterClick: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -209,12 +280,20 @@ private fun HeaderRow(onBackClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = "Total Spending",
+                    text = when (mode) {
+                        "expense" -> "Total Spending"
+                        "income" -> "Total Income"
+                        else -> "Transactions"
+                    },
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
                 Text(
-                    text = "This Month",
+                    text = when (mode) {
+                        "expense" -> "Expenses"
+                        "income" -> "Incomes"
+                        else -> "All History"
+                    },
                     color = TextWhite,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
@@ -227,7 +306,8 @@ private fun HeaderRow(onBackClick: () -> Unit) {
             modifier = Modifier
                 .size(44.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(CardDark),
+                .background(CardDark)
+                .clickable { onFilterClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -241,7 +321,7 @@ private fun HeaderRow(onBackClick: () -> Unit) {
 }
 
 @Composable
-private fun TotalSummaryCard(totalIncome: Double, totalExpenses: Double, count: Int) {
+private fun TotalSummaryCard(mode: String, totalIncome: Double, totalExpenses: Double, count: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -252,38 +332,63 @@ private fun TotalSummaryCard(totalIncome: Double, totalExpenses: Double, count: 
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.TrendingDown,
+                    imageVector = when (mode) {
+                        "expense" -> Icons.Default.ArrowDownward
+                        "income" -> Icons.Default.ArrowUpward
+                        else -> Icons.AutoMirrored.Filled.TrendingDown
+                    },
                     contentDescription = "Transactions",
                     tint = TextWhite.copy(alpha = 0.9f),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Transaction Summary",
+                    text = when (mode) {
+                        "expense" -> "Total Expenses Summary"
+                        "income" -> "Total Incomes Summary"
+                        else -> "Transaction Summary"
+                    },
                     color = TextWhite.copy(alpha = 0.85f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))
-            // Net balance = income - expenses
+            // Net balance or specific total
             Text(
-                text = "LKR %,.0f".format(totalIncome - totalExpenses),
+                text = when (mode) {
+                    "expense" -> "LKR %,.0f".format(totalExpenses)
+                    "income" -> "LKR %,.0f".format(totalIncome)
+                    else -> "LKR %,.0f".format(totalIncome - totalExpenses)
+                },
                 color = TextWhite,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            if (mode == "all") {
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    Text(
+                        text = "+LKR %,.0f  Income".format(totalIncome),
+                        color = Color(0xFF4CAF50),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "-LKR %,.0f  Expenses".format(totalExpenses),
+                        color = Color(0xFFFF6B6B),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
                 Text(
-                    text = "+LKR %,.0f  Income".format(totalIncome),
-                    color = Color(0xFF4CAF50),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = "-LKR %,.0f  Expenses".format(totalExpenses),
-                    color = Color(0xFFFF6B6B),
+                    text = when (mode) {
+                        "expense" -> "Total recorded cash out"
+                        "income" -> "Total recorded cash in"
+                        else -> ""
+                    },
+                    color = TextWhite.copy(alpha = 0.8f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -376,7 +481,10 @@ private fun DateHeaderItem(title: String) {
 
 @Composable
 private fun TransactionListItem(transaction: Transaction) {
-    val (icon, color) = getCategoryMeta(transaction.subCategory)
+    val resolvedSubCategory = transaction.subCategory.ifEmpty {
+        transaction.category.name.lowercase().replaceFirstChar { it.uppercase() }
+    }
+    val (icon, color) = getCategoryMeta(resolvedSubCategory)
     
     Row(
         modifier = Modifier
@@ -396,7 +504,7 @@ private fun TransactionListItem(transaction: Transaction) {
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = transaction.subCategory,
+                contentDescription = resolvedSubCategory,
                 tint = color,
                 modifier = Modifier.size(22.dp)
             )
@@ -406,8 +514,9 @@ private fun TransactionListItem(transaction: Transaction) {
 
         // Transaction Details
         Column(modifier = Modifier.weight(1f)) {
+            val displayName = transaction.note.ifEmpty { resolvedSubCategory }
             Text(
-                text = transaction.note.ifEmpty { transaction.subCategory },
+                text = displayName,
                 color = TextWhite,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -417,7 +526,7 @@ private fun TransactionListItem(transaction: Transaction) {
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = transaction.subCategory,
+                    text = resolvedSubCategory,
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
@@ -443,6 +552,152 @@ private fun TransactionListItem(transaction: Transaction) {
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+@Composable
+fun FilterSortDialog(
+    currentFactor: SortFactor,
+    currentOrder: SortOrder,
+    onDismiss: () -> Unit,
+    onApply: (SortFactor, SortOrder) -> Unit
+) {
+    var selectedFactor by remember { mutableStateOf(currentFactor) }
+    var selectedOrder by remember { mutableStateOf(currentOrder) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CardDark,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Text(
+                text = "Sort & Filter",
+                color = TextWhite,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                // Sort By Section
+                Column {
+                    Text(
+                        text = "Sort By",
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Date Button
+                        val isDate = selectedFactor == SortFactor.DATE
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isDate) GradientPurple else TabUnselectedCard)
+                                .clickable { selectedFactor = SortFactor.DATE },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Date",
+                                color = if (isDate) TextWhite else TextSecondary,
+                                fontSize = 14.sp,
+                                fontWeight = if (isDate) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                        // Price Button
+                        val isPrice = selectedFactor == SortFactor.PRICE
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isPrice) GradientPurple else TabUnselectedCard)
+                                .clickable { selectedFactor = SortFactor.PRICE },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Amount",
+                                color = if (isPrice) TextWhite else TextSecondary,
+                                fontSize = 14.sp,
+                                fontWeight = if (isPrice) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                // Order Section
+                Column {
+                    Text(
+                        text = "Order",
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Descending Button
+                        val isDesc = selectedOrder == SortOrder.DESCENDING
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isDesc) GradientCyan else TabUnselectedCard)
+                                .clickable { selectedOrder = SortOrder.DESCENDING },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (selectedFactor == SortFactor.DATE) "Newest First" else "Highest First",
+                                color = if (isDesc) TextWhite else TextSecondary,
+                                fontSize = 14.sp,
+                                fontWeight = if (isDesc) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                        // Ascending Button
+                        val isAsc = selectedOrder == SortOrder.ASCENDING
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isAsc) GradientCyan else TabUnselectedCard)
+                                .clickable { selectedOrder = SortOrder.ASCENDING },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (selectedFactor == SortFactor.DATE) "Oldest First" else "Lowest First",
+                                color = if (isAsc) TextWhite else TextSecondary,
+                                fontSize = 14.sp,
+                                fontWeight = if (isAsc) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onApply(selectedFactor, selectedOrder) },
+                colors = ButtonDefaults.buttonColors(containerColor = GradientPurple),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Apply", color = TextWhite, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondary)
+            }
+        }
+    )
 }
 
 // ── Utility Helper Functions ───────────────────────────────────────────────────
@@ -481,6 +736,9 @@ private fun getCategoryMeta(subCategory: String): Pair<ImageVector, Color> {
         "coffee"        -> Icons.Default.LocalCafe to Color(0xFF8D6E63) // Brown
         "gifts"         -> Icons.Default.CardGiftcard to Color(0xFFAB47BC) // Lavender
         "health"        -> Icons.Default.Favorite to Color(0xFF26A69A) // Teal
+        "salary"        -> Icons.Default.Work to Color(0xFF4CAF50) // Green
+        "freelance"     -> Icons.Default.Computer to Color(0xFF00B4D8) // Blue/Cyan
+        "crypto"        -> Icons.Default.AccountBalanceWallet to Color(0xFFFF9800) // Orange
         else            -> Icons.Default.MoreHoriz to Color(0xFF8C91A5) // Slate Gray
     }
 }

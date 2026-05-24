@@ -22,6 +22,7 @@ data class DashboardUiState(
     val netBalance: Double = 0.0,
     val recentTransactions: List<Transaction> = emptyList(),
     val categoryBreakdown: Map<String, Double> = emptyMap(),
+    val incomeBreakdown: Map<String, Double> = emptyMap(),
     val activeGoal: Goal? = null,
     val goalProgress: Float = 0f,
     val error: String? = null,
@@ -73,6 +74,14 @@ class DashboardViewModel(
                     .sortedByDescending { it.second }
                     .toMap()
 
+                val incomeBreakdown = transactions
+                    .filter { it.type == TransactionType.INCOME }
+                    .groupBy { it.subCategory.ifEmpty { it.category.name } }
+                    .mapValues { entry -> entry.value.sumOf { it.baseAmountLKR } }
+                    .toList()
+                    .sortedByDescending { it.second }
+                    .toMap()
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     totalIncome = income,
@@ -80,6 +89,7 @@ class DashboardViewModel(
                     netBalance = income - expenses,
                     recentTransactions = transactions.take(5),
                     categoryBreakdown = categoryBreakdown,
+                    incomeBreakdown = incomeBreakdown,
                     error = null
                 )
             }
