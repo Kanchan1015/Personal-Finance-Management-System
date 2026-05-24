@@ -1,7 +1,8 @@
 package com.example.pbd.ui.screens.auth
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,6 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.pbd.navigation.Screen
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import org.koin.androidx.compose.koinViewModel
 
 // ── Colour palette ────────────────────────────────────────────────────────────
@@ -53,10 +56,55 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
     
     // Observe the authentication state from the ViewModel
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
+    val webClientId = remember(context) {
+        val resourceId = context.resources.getIdentifier(
+            "default_web_client_id",
+            "string",
+            context.packageName
+        )
+        if (resourceId == 0) "" else context.getString(resourceId)
+    }
+    val googleSignInClient = remember(context, webClientId) {
+        if (webClientId.isBlank()) {
+            null
+        } else {
+            val googleSignInOptions = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(webClientId)
+                .requestEmail()
+                .build()
+            GoogleSignIn.getClient(context, googleSignInOptions)
+        }
+    }
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        try {
+            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                .getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken.isNullOrBlank()) {
+                Toast.makeText(
+                    context,
+                    "Google Sign-In did not return an ID token",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                viewModel.signInWithGoogle(idToken)
+            }
+        } catch (e: ApiException) {
+            Toast.makeText(
+                context,
+                "Google Sign-In failed: ${e.localizedMessage ?: e.statusCode}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     // React to state changes
     LaunchedEffect(authState) {
@@ -70,6 +118,15 @@ fun LoginScreen(
             }
             is AuthState.Error -> {
                 Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_LONG).show()
+                viewModel.resetState()
+            }
+            is AuthState.PasswordResetSent -> {
+                Toast.makeText(
+                    context,
+                    "Password reset email sent to ${(authState as AuthState.PasswordResetSent).email}",
+                    Toast.LENGTH_LONG
+                ).show()
+                showForgotPasswordDialog = false
                 viewModel.resetState()
             }
             else -> Unit
@@ -201,6 +258,21 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Forgot password?",
+                color = GradientEnd,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clickable {
+                        resetEmail = email
+                        showForgotPasswordDialog = true
+                    }
+            )
+
             Spacer(modifier = Modifier.height(40.dp))
 
             // ── Login Action Button ───────────────────────────────────────
@@ -238,6 +310,69 @@ fun LoginScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = DarkBorder
+                )
+                Text(
+                    text = "  or  ",
+                    color = LabelGray,
+                    fontSize = 12.sp
+                )
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = DarkBorder
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedButton(
+                onClick = {
+                    val client = googleSignInClient
+                    if (client == null) {
+                        Toast.makeText(
+                            context,
+                            "Google Sign-In needs Firebase OAuth client setup first",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        googleSignInLauncher.launch(client.signInIntent)
+                    }
+                },
+                enabled = !isLoading,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = DarkCard,
+                    contentColor = WhiteText,
+                    disabledContainerColor = DarkCard,
+                    disabledContentColor = LabelGray
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text(
+                    text = "G",
+                    color = GradientEnd,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Continue with Google",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -283,6 +418,70 @@ fun LoginScreen(
                         )
                     )
                 )
+        )
+    }
+
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgotPasswordDialog = false },
+            containerColor = DarkCard,
+            title = {
+                Text(
+                    text = "Reset Password",
+                    color = WhiteText,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Enter the email address linked to your account.",
+                        color = LabelGray,
+                        fontSize = 14.sp
+                    )
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("Email Address") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = null,
+                                tint = LabelGray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GradientStart,
+                            unfocusedBorderColor = DarkBorder,
+                            focusedContainerColor = DarkBackground,
+                            unfocusedContainerColor = DarkBackground,
+                            focusedLabelColor = GradientStart,
+                            unfocusedLabelColor = LabelGray,
+                            focusedTextColor = WhiteText,
+                            unfocusedTextColor = WhiteText
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.sendPasswordResetEmail(resetEmail) },
+                    enabled = authState !is AuthState.Loading && resetEmail.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = GradientStart)
+                ) {
+                    Text("Send Email")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForgotPasswordDialog = false }) {
+                    Text("Cancel", color = LabelGray)
+                }
+            }
         )
     }
 }
