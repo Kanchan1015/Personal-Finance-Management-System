@@ -58,9 +58,9 @@ import androidx.navigation.NavHostController
 import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.ui.theme.PBDTheme
 
-private val DarkBackground = Color(0xFF1C1C2E)
-private val DarkCard = Color(0xFF2A2A3E)
-private val DarkBorder = Color(0xFF3A3A4E)
+private val DarkBackground = Color(0xFF0D0F1A)
+private val DarkCard       = Color(0xFF161929)
+private val DarkBorder     = Color(0xFF212437)
 private val LabelGray = Color(0xFF9E9E9E)
 private val WhiteText = Color(0xFFFFFFFF)
 private val GradientStart = Color(0xFF7B61FF)
@@ -223,8 +223,11 @@ private fun AddIncomeScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
         ) {
+            Spacer(modifier = Modifier.height(48.dp))
+
             HeaderSection(onClose = onClose)
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -378,23 +381,8 @@ private fun ConversionPreviewCard(
 private fun HeaderSection(onClose: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = "Add New",
-                color = LabelGray,
-                fontSize = 14.sp
-            )
-            Text(
-                text = "Income",
-                color = WhiteText,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -408,6 +396,20 @@ private fun HeaderSection(onClose: () -> Unit) {
                 contentDescription = "Back",
                 tint = WhiteText,
                 modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = "Add New",
+                color = LabelGray,
+                fontSize = 13.sp
+            )
+            Text(
+                text = "Income",
+                color = WhiteText,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
         }
     }

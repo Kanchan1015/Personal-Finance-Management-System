@@ -107,33 +107,6 @@ fun HomeScreen(
                         onClick = { navController.navigate(Screen.GoalDetail.createRoute(goal.id)) }
                     )
 
-                    Spacer(Modifier.height(10.dp))
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = CardDark.copy(alpha = 0.6f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.TrackChanges,
-                                contentDescription = null,
-                                tint = AccentPurple,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = "Compile Acceleration: Tapping Boost gets you your high-speed MacBook compiler sooner!",
-                                color = TextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-
                     Spacer(Modifier.height(24.dp))
                 }
 
@@ -145,66 +118,74 @@ fun HomeScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // ── Two action buttons ────────────────────────────────────────────
+                // ── Four quick action buttons in a beautiful horizontal row ───────
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(CardDark)
+                        .padding(vertical = 16.dp, horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    QuickActionCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.AutoMirrored.Filled.List,
-                        label = "View Expenses",
-                        description = "See all recorded expenses",
-                        iconBg = Brush.linearGradient(listOf(AccentBlue, AccentPurple)),
-                        onClick = { navController.navigate(Screen.TransactionHistory.route) }
-                    )
-                    QuickActionCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Filled.Add,
-                        label = "Add Expense",
-                        description = "Log a new expense entry",
-                        iconBg = Brush.linearGradient(listOf(AccentOrange, Color(0xFFFF5722))),
-                        onClick = { navController.navigate(Screen.AddExpense.route) }
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    QuickActionCard(
+                    QuickActionItem(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Filled.AttachMoney,
                         label = "Add Income",
-                        description = "Record a new income entry",
-                        iconBg = Brush.linearGradient(listOf(AccentGreen, AccentBlue)),
+                        iconBg = Brush.linearGradient(listOf(AccentGreen, Color(0xFF00C853))),
                         onClick = { navController.navigate(Screen.AddIncome.route) }
                     )
-                    QuickActionCard(
+                    QuickActionItem(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.Add,
+                        label = "Add Expense",
+                        iconBg = Brush.linearGradient(listOf(AccentOrange, Color(0xFFFF5722))),
+                        onClick = { navController.navigate(Screen.AddExpense.route) }
+                    )
+                    QuickActionItem(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.AutoMirrored.Filled.List,
+                        label = "Expenses",
+                        iconBg = Brush.linearGradient(listOf(AccentBlue, AccentPurple)),
+                        onClick = { navController.navigate(Screen.TransactionHistory.route) }
+                    )
+                    QuickActionItem(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Filled.TrackChanges,
-                        label = "Goal Tracker",
-                        description = "View your savings goal",
+                        label = "Goals",
                         iconBg = Brush.linearGradient(listOf(AccentPurple, Color(0xFFE040FB))),
                         onClick = { navController.navigate(Screen.GoalDetail.createRoute("active")) }
                     )
                 }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
                 // ── Spending overview ─────────────────────────────────────────────
-                Text(
-                    text = "Spending Overview",
-                    color = TextPrimary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Spending Overview",
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "View More",
+                        color = AccentBlue,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable {
+                            navController.navigate(Screen.TransactionHistory.route)
+                        }
+                    )
+                }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 val categories = uiState.categoryBreakdown.toList()
                 if (categories.isEmpty()) {
@@ -386,61 +367,54 @@ private fun BalanceStat(
 }
 
 @Composable
-private fun QuickActionCard(
+private fun QuickActionItem(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     label: String,
-    description: String,
     iconBg: Brush,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
+        targetValue = if (isPressed) 0.92f else 1f,
         animationSpec = tween(100),
         label = "scale"
     )
 
-    Box(
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .scale(scale)
-            .clip(RoundedCornerShape(20.dp))
-            .background(CardDark)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(20.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.Start) {
-            // Icon circle
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(iconBg),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = label,
-                color = TextPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
             )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = description,
-                color = TextSecondary,
-                fontSize = 11.sp,
-                lineHeight = 14.sp
+            .scale(scale)
+    ) {
+        // Icon container with gradient and rounded shape
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(iconBg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
             )
         }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = label,
+            color = TextPrimary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
