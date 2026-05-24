@@ -29,6 +29,9 @@ The app’s most notable implemented flow is the Income & Currency Engine:
 
 - user registration with Firebase Authentication
 - user login with Firebase Authentication
+- Google Sign-In through Firebase Authentication
+- password reset email flow for email/password accounts
+- basic auth input validation for name, email, and password fields
 - Firestore-backed user profile creation and retrieval
 - logout support
 
@@ -105,6 +108,18 @@ The app’s most notable implemented flow is the Income & Currency Engine:
 - periodic background processing
 - automatic generation of due expense transactions
 
+### Notifications & Reminders
+
+- in-app Notification Center with persisted notification history
+- unread notification count shown from local Room data
+- Android notification channels for budget alerts, transactions, goals, and summaries
+- large-transaction alerts based on a configurable LKR threshold
+- monthly budget alerts when spending crosses the configured limit
+- recurring-expense auto-log notifications
+- goal milestone and goal-deadline reminders
+- daily spending summary reminders and weekly financial report notifications
+- notification preferences stored locally, including enable/disable toggle, daily reminder time, budget threshold, and large-transaction threshold
+
 ## Tech Stack
 
 ### Core
@@ -122,6 +137,7 @@ The app’s most notable implemented flow is the Income & Currency Engine:
 - Lifecycle ViewModel
 - Room
 - WorkManager
+- Google Play Services Auth
 
 ### Backend / Cloud
 
@@ -222,6 +238,7 @@ Main persisted entities:
 
 - `Transaction`
 - `RecurringExpense`
+- `NotificationEntity`
 
 #### Remote / Worker Layer
 
@@ -230,6 +247,9 @@ Contains:
 - Retrofit exchange-rate API integration
 - `SyncWorker` for unsynced transactions
 - `RecurringExpenseWorker` for scheduled recurring expense processing
+- `GoalDeadlineWorker` for goal deadline reminders
+- `WeeklyReportWorker` for weekly summary notifications
+- notification receivers/helpers for daily reminders and notification channels
 
 ## Important Data Models
 
@@ -255,6 +275,10 @@ The central financial record model. It stores:
 ### RecurringExpense
 
 Stores recurring expense templates for later automatic logging through WorkManager.
+
+### NotificationEntity
+
+Stores notifications shown in the in-app Notification Center so users can review alerts even after dismissing Android system notifications.
 
 ### User
 
@@ -306,6 +330,7 @@ Registered app routes include:
 - dashboard
 - transaction history
 - goal detail
+- notification center
 
 ## Project Structure
 
@@ -315,6 +340,7 @@ app/
     data/
       local/
       model/
+      notification/
       remote/
       repository/
       worker/
@@ -346,8 +372,9 @@ Required:
 1. Create a Firebase project
 2. Register the Android app package
 3. Enable Firebase Authentication
-4. Enable Cloud Firestore
-5. Place the Firebase config file in:
+4. Enable Email/Password and Google sign-in providers
+5. Enable Cloud Firestore
+6. Place the Firebase config file in:
 
 ```text
 app/google-services.json
@@ -387,15 +414,25 @@ Build APK:
 ./gradlew assembleDebug
 ```
 
+The debug APK is generated at:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
 ## Current Status
 
 Implemented and working in the repository today:
 
 - authentication flow
+- Google Sign-In
+- password reset email flow
+- auth input validation
 - profile loading
 - income entry with currency conversion
 - expense entry
 - recurring expense scheduling
+- notification center, daily reminders, weekly reports, budget alerts, large-transaction alerts, recurring-expense alerts, and goal reminders
 - Room-based transaction persistence
 - Firestore background sync
 - dashboard totals and recent transaction summaries
@@ -406,7 +443,6 @@ Current limitations / future improvements:
 
 - exchange-rate responses are not cached locally
 - Firestore sync completion is not surfaced to the user as a separate sync status
-- some parts of the architecture are still mixed, especially `TransactionHistoryViewModel`, which still manually builds its repository instead of using the same DI pattern as other modules
 - Room currently uses destructive migration fallback during development
 - instrumentation and unit test coverage is still minimal
 
@@ -414,8 +450,13 @@ Current limitations / future improvements:
 
 Additional internal project notes are available in:
 
-- [docs/add-income-feature.md](/Users/kanchan/Desktop/Personal-Finance-Management-System/docs/add-income-feature.md:1)
-- [docs/flow.md](/Users/kanchan/Desktop/Personal-Finance-Management-System/docs/flow.md:1)
+- [docs/add-income-feature.md](docs/add-income-feature.md)
+- [docs/flow.md](docs/flow.md)
+- [docs/feature.doc](docs/feature.doc)
+
+Firestore security rules are available in:
+
+- [firestore.rules](firestore.rules)
 
 ## Build Configuration
 
