@@ -26,4 +26,7 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET isSynced = 1 WHERE id = :id")
     suspend fun markAsSynced(id: String)
+
+    @Query("DELETE FROM transactions WHERE id = :id")
+    suspend fun deleteTransactionById(id: String)
 }
