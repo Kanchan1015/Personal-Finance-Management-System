@@ -31,5 +31,6 @@ enum class TransactionCategory {
     FREELANCE,
     CRYPTO,
     COMMITTED,
-    DISCRETIONARY
+    DISCRETIONARY,
+    SAVINGS
 }
