@@ -103,7 +103,7 @@ fun AddIncomeScreen(
 
     LaunchedEffect(uiState.isRoutingSuccess) {
         if (uiState.isRoutingSuccess) {
-            val routed = interceptedAmountLKR * 0.20
+            val routed = interceptedAmountLKR * (uiState.savingsPercentage / 100.0)
             android.widget.Toast.makeText(
                 context,
                 "LKR ${"%,.0f".format(routed)} routed to ${uiState.activeGoal?.title}!",
@@ -141,7 +141,7 @@ fun AddIncomeScreen(
         if (showInterceptSheet) {
             val activeGoal = uiState.activeGoal
             if (activeGoal != null) {
-                val routedAmount = interceptedAmountLKR * 0.20
+                val routedAmount = interceptedAmountLKR * (uiState.savingsPercentage / 100.0)
                 AlertDialog(
                     onDismissRequest = {
                         showInterceptSheet = false
@@ -160,7 +160,7 @@ fun AddIncomeScreen(
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                text = "LKR ${"%,.0f".format(interceptedAmountLKR)} income logged. Would you like to route 20% (LKR ${"%,.0f".format(routedAmount)}) directly to your ${activeGoal.title} fund?",
+                                text = "LKR ${"%,.0f".format(interceptedAmountLKR)} income logged. Would you like to route ${uiState.savingsPercentage}% (LKR ${"%,.0f".format(routedAmount)}) directly to your ${activeGoal.title} fund?",
                                 color = LabelGray,
                                 fontSize = 15.sp,
                                 lineHeight = 20.sp
@@ -170,7 +170,7 @@ fun AddIncomeScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                viewModel.routeSavingsToGoal(interceptedAmountLKR, activeGoal)
+                                viewModel.routeSavingsToGoal(interceptedAmountLKR, activeGoal, uiState.savingsPercentage)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = GradientStart)
                         ) {

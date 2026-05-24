@@ -48,4 +48,33 @@ class ProfileViewModel(
     fun logout() {
         authRepository.logout()
     }
+
+    fun updateUserProfile(
+        name: String,
+        baseCurrency: String,
+        savingsPercentage: Int,
+        notificationsEnabled: Boolean
+    ) {
+        val currentState = _profileState.value
+        if (currentState is ProfileState.Success) {
+            val updatedUser = currentState.user.copy(
+                name = name,
+                baseCurrency = baseCurrency,
+                savingsPercentage = savingsPercentage,
+                notificationsEnabled = notificationsEnabled
+            )
+            _profileState.value = ProfileState.Loading
+            viewModelScope.launch {
+                val result = authRepository.updateUserProfile(updatedUser)
+                result.fold(
+                    onSuccess = {
+                        _profileState.value = ProfileState.Success(updatedUser)
+                    },
+                    onFailure = { e ->
+                        _profileState.value = ProfileState.Error(e.message ?: "Failed to update profile")
+                    }
+                )
+            }
+        }
+    }
 }
