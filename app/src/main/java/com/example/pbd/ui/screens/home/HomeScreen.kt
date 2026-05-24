@@ -83,7 +83,7 @@ fun HomeScreen(
                 // ── Top bar ──────────────────────────────────────────────────────
                 TopBar(
                     userName = uiState.userName,
-                    onAvatarClick = { navController.navigate(Screen.Dashboard.route) }
+                    onAvatarClick = { navController.navigate(Screen.Profile.route) }
                 )
 
                 Spacer(Modifier.height(24.dp))
@@ -267,7 +267,7 @@ private fun TopBar(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar placeholder — clickable to navigate to dashboard
+        // Avatar placeholder — clickable to navigate to profile
         Box(
             modifier = Modifier
                 .size(44.dp)
