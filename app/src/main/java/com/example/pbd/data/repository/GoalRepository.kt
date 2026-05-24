@@ -7,50 +7,12 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-class GoalRepository {
-
-    private val firestore = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
+class GoalRepository(
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
+) {
 
     private val userId get() = auth.currentUser?.uid ?: ""
-
-    fun getGoalById(goalId: String): Flow<Goal?> = callbackFlow {
-        if (userId.isEmpty()) {
-            trySend(null)
-            close()
-            return@callbackFlow
-        }
-
-        val listener = firestore
-            .collection("goals")
-            .document(goalId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(null)
-                    return@addSnapshotListener
-                }
-                if (snapshot != null && snapshot.exists()) {
-                    try {
-                        val goal = Goal(
-                            id = snapshot.id,
-                            userId = snapshot.getString("userId") ?: "",
-                            title = snapshot.getString("title") ?: "",
-                            targetAmount = snapshot.getDouble("targetAmount") ?: 0.0,
-                            currentSaved = snapshot.getDouble("currentSaved") ?: 0.0,
-                            deadline = snapshot.getLong("deadline") ?: 0L,
-                            status = snapshot.getString("status") ?: "ACTIVE"
-                        )
-                        trySend(goal)
-                    } catch (e: Exception) {
-                        trySend(null)
-                    }
-                } else {
-                    trySend(null)
-                }
-            }
-
-        awaitClose { listener.remove() }
-    }
 
     fun getAllGoals(): Flow<List<Goal>> = callbackFlow {
         if (userId.isEmpty()) {
@@ -86,5 +48,23 @@ class GoalRepository {
             }
 
         awaitClose { listener.remove() }
+    }
+
+    suspend fun addGoal(title: String, targetAmount: Double, months: Int) {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val deadline = System.currentTimeMillis() + (months.toLong() * 30 * 24 * 60 * 60 * 1000)
+        val goal = hashMapOf(
+            "userId" to currentUserId,
+            "title" to title,
+            "targetAmount" to targetAmount,
+            "currentSaved" to 0.0,
+            "deadline" to deadline,
+            "status" to "ACTIVE"
+        )
+        firestore.collection("goals").add(goal)
+    }
+
+    suspend fun deleteGoal(goalId: String) {
+        firestore.collection("goals").document(goalId).delete()
     }
 }

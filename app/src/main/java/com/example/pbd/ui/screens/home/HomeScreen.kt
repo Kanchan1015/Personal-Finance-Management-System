@@ -14,8 +14,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.pbd.navigation.Screen
+import org.koin.androidx.compose.koinViewModel
+import com.example.pbd.ui.screens.dashboard.DashboardViewModel
 
 // ── Colour palette ────────────────────────────────────────────────────────────
 private val BgDark        = Color(0xFF0D0F1A)
@@ -48,111 +51,165 @@ private val CardGradient = Brush.linearGradient(
 
 // ── Main composable ───────────────────────────────────────────────────────────
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun HomeScreen(
+    navController: NavHostController,
+    viewModel: DashboardViewModel = koinViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(BgDark)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
-        ) {
-            Spacer(Modifier.height(48.dp))
-
-            // ── Top bar ──────────────────────────────────────────────────────
-            TopBar()
-
-            Spacer(Modifier.height(24.dp))
-
-            // ── Balance card ─────────────────────────────────────────────────
-            BalanceCard()
-
-            Spacer(Modifier.height(28.dp))
-
-            // ── Section title ─────────────────────────────────────────────────
-            Text(
-                text = "Quick Actions",
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // ── Two action buttons ────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                QuickActionCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.List,
-                    label = "View Expenses",
-                    description = "See all recorded expenses",
-                    iconBg = Brush.linearGradient(listOf(AccentBlue, AccentPurple)),
-                    onClick = { navController.navigate(Screen.TransactionHistory.route) }
-                )
-                QuickActionCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Add,
-                    label = "Add Expense",
-                    description = "Log a new expense entry",
-                    iconBg = Brush.linearGradient(listOf(AccentOrange, Color(0xFFFF5722))),
-                    onClick = { navController.navigate(Screen.AddExpense.route) }
-                )
+                CircularProgressIndicator(color = AccentPurple)
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp)
             ) {
-                QuickActionCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.AttachMoney,
-                    label = "Add Income",
-                    description = "Record a new income entry",
-                    iconBg = Brush.linearGradient(listOf(AccentGreen, AccentBlue)),
-                    onClick = { navController.navigate(Screen.AddIncome.route) }
+                Spacer(Modifier.height(48.dp))
+
+                // ── Top bar ──────────────────────────────────────────────────────
+                TopBar(
+                    userName = uiState.userName,
+                    onAvatarClick = { navController.navigate(Screen.Dashboard.route) }
                 )
-                Spacer(modifier = Modifier.weight(1f))
-            }
 
-            Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(24.dp))
 
-            // ── Spending overview placeholder row ─────────────────────────────
-            Text(
-                text = "Spending Overview",
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
+                // ── Balance card ─────────────────────────────────────────────────
+                BalanceCard(
+                    balance = uiState.netBalance,
+                    income = uiState.totalIncome,
+                    expenses = uiState.totalExpenses
+                )
 
-            Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(28.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SpendingCard(label = "Shopping",  amount = "45K",  color = AccentGreen,  modifier = Modifier.weight(1f))
-                SpendingCard(label = "Housing",   amount = "38.5K", color = AccentBlue,  modifier = Modifier.weight(1f))
-                SpendingCard(label = "Food",      amount = "24K",  color = AccentOrange, modifier = Modifier.weight(1f))
-            }
+                // ── Section title ─────────────────────────────────────────────────
+                Text(
+                    text = "Quick Actions",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
-            Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SpendingCard(label = "Transport", amount = "12.8K", color = Color(0xFFE91E63), modifier = Modifier.weight(1f))
-                SpendingCard(label = "Others",    amount = "55K",   color = TextSecondary,      modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.weight(1f))
+                // ── Two action buttons ────────────────────────────────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    QuickActionCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.AutoMirrored.Filled.List,
+                        label = "View Expenses",
+                        description = "See all recorded expenses",
+                        iconBg = Brush.linearGradient(listOf(AccentBlue, AccentPurple)),
+                        onClick = { navController.navigate(Screen.TransactionHistory.route) }
+                    )
+                    QuickActionCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.Add,
+                        label = "Add Expense",
+                        description = "Log a new expense entry",
+                        iconBg = Brush.linearGradient(listOf(AccentOrange, Color(0xFFFF5722))),
+                        onClick = { navController.navigate(Screen.AddExpense.route) }
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    QuickActionCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.AttachMoney,
+                        label = "Add Income",
+                        description = "Record a new income entry",
+                        iconBg = Brush.linearGradient(listOf(AccentGreen, AccentBlue)),
+                        onClick = { navController.navigate(Screen.AddIncome.route) }
+                    )
+                    QuickActionCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.TrackChanges,
+                        label = "Goal Tracker",
+                        description = "View your savings goal",
+                        iconBg = Brush.linearGradient(listOf(AccentPurple, Color(0xFFE040FB))),
+                        onClick = { navController.navigate(Screen.GoalDetail.createRoute("active")) }
+                    )
+                }
+
+                Spacer(Modifier.height(28.dp))
+
+                // ── Spending overview ─────────────────────────────────────────────
+                Text(
+                    text = "Spending Overview",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                val categories = uiState.categoryBreakdown.toList()
+                if (categories.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(CardDark)
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No expenses recorded yet. Tap 'Add Expense' to get started!",
+                            color = TextSecondary,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    val rows = categories.chunked(3)
+                    rows.forEachIndexed { rowIndex, rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowItems.forEach { (category, amount) ->
+                                val progress = if (uiState.totalExpenses > 0) (amount / uiState.totalExpenses).toFloat() else 0f
+                                SpendingCard(
+                                    label = category.lowercase().replaceFirstChar { it.uppercase() },
+                                    amount = "LKR %,.0f".format(amount),
+                                    color = getCategoryColor(category),
+                                    progress = progress,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (rowItems.size < 3) {
+                                repeat(3 - rowItems.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                        if (rowIndex < rows.size - 1) {
+                            Spacer(Modifier.height(12.dp))
+                        }
+                    }
+                }
             }
         }
     }
@@ -161,20 +218,29 @@ fun HomeScreen(navController: NavHostController) {
 // ── Sub-composables ───────────────────────────────────────────────────────────
 
 @Composable
-private fun TopBar() {
+private fun TopBar(
+    userName: String,
+    onAvatarClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar placeholder
+        // Avatar placeholder — clickable to navigate to dashboard
         Box(
             modifier = Modifier
                 .size(44.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.linearGradient(listOf(AccentPurple, AccentBlue))),
+                .background(Brush.linearGradient(listOf(AccentPurple, AccentBlue)))
+                .clickable { onAvatarClick() },
             contentAlignment = Alignment.Center
         ) {
-            Text("K", color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            Text(
+                userName.take(1).uppercase(),
+                color = TextPrimary,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.sp
+            )
         }
 
         Spacer(Modifier.width(12.dp))
@@ -186,7 +252,7 @@ private fun TopBar() {
                 fontSize = 13.sp
             )
             Text(
-                text = "Kavindu",
+                text = userName,
                 color = TextPrimary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
@@ -214,7 +280,11 @@ private fun TopBar() {
 }
 
 @Composable
-private fun BalanceCard() {
+private fun BalanceCard(
+    balance: Double,
+    income: Double,
+    expenses: Double
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -230,7 +300,7 @@ private fun BalanceCard() {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "LKR 11,200",
+                text = "LKR %,.0f".format(balance),
                 color = Color.White,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold
@@ -239,15 +309,15 @@ private fun BalanceCard() {
             Row(modifier = Modifier.fillMaxWidth()) {
                 BalanceStat(
                     label = "Income",
-                    value = "187K",
-                    change = "+12% from last month",
+                    value = "LKR %,.0f".format(income),
+                    change = "Base currency",
                     color = AccentGreen,
                     modifier = Modifier.weight(1f)
                 )
                 BalanceStat(
                     label = "Expenses",
-                    value = "175K",
-                    change = "-8% from last month",
+                    value = "LKR %,.0f".format(expenses),
+                    change = "Base currency",
                     color = AccentOrange,
                     modifier = Modifier.weight(1f)
                 )
@@ -336,6 +406,7 @@ private fun SpendingCard(
     label: String,
     amount: String,
     color: Color,
+    progress: Float,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -373,11 +444,22 @@ private fun SpendingCard(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.6f)
+                    .fillMaxWidth(progress.coerceIn(0f, 1f))
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(2.dp))
                     .background(color)
             )
         }
+    }
+}
+
+private fun getCategoryColor(category: String): Color {
+    return when (category.uppercase()) {
+        "ESSENTIAL" -> AccentBlue
+        "DISCRETIONARY" -> AccentGreen
+        "SAVINGS" -> AccentPurple
+        "DEBT" -> Color(0xFFE91E63)
+        "INVESTMENT" -> AccentOrange
+        else -> TextSecondary
     }
 }

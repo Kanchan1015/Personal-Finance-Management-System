@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit
 
 data class GoalDetailUiState(
     val isLoading: Boolean = true,
+    val goals: List<Goal> = emptyList(),
     val goal: Goal? = null,
     val progressPercent: Int = 0,
     val monthsRemaining: Long = 0,
@@ -20,39 +21,47 @@ data class GoalDetailUiState(
     val error: String? = null
 )
 
-class GoalDetailViewModel : ViewModel() {
-
-    private val repository = GoalRepository()
+class GoalDetailViewModel(private val repository: GoalRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GoalDetailUiState())
     val uiState: StateFlow<GoalDetailUiState> = _uiState.asStateFlow()
 
     fun loadGoal(goalId: String) {
         viewModelScope.launch {
-            if (goalId.isEmpty()) {
-                repository.getAllGoals().collect { goals ->
-                    val goal = goals.firstOrNull()
-                    if (goal != null) {
-                        calculateAndUpdate(goal)
+            repository.getAllGoals().collect { goals ->
+                if (goals.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        goals = emptyList(),
+                        goal = null,
+                        error = "No active goal found"
+                    )
+                } else {
+                    val primaryGoal = if (goalId == "active" || goalId.isEmpty()) {
+                        goals.first()
                     } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "No active goal found"
-                        )
+                        goals.find { it.id == goalId } ?: goals.first()
                     }
-                }
-            } else {
-                repository.getGoalById(goalId).collect { goal ->
-                    if (goal != null) {
-                        calculateAndUpdate(goal)
-                    } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "Goal not found"
-                        )
-                    }
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        goals = goals,
+                        error = null
+                    )
+                    calculateAndUpdate(primaryGoal)
                 }
             }
+        }
+    }
+
+    fun addGoal(title: String, targetAmount: Double, months: Int) {
+        viewModelScope.launch {
+            repository.addGoal(title, targetAmount, months)
+        }
+    }
+
+    fun deleteGoal(goalId: String) {
+        viewModelScope.launch {
+            repository.deleteGoal(goalId)
         }
     }
 
@@ -71,24 +80,14 @@ class GoalDetailViewModel : ViewModel() {
             amountRemaining / monthsRemaining
         } else amountRemaining
 
-        // On track if they've saved at least what they should have by now
-        val totalMonths = if (goal.deadline > 0) {
-            val totalDiff = goal.deadline - (goal.id.hashCode().toLong())
-            (TimeUnit.MILLISECONDS.toDays(
-                goal.deadline - System.currentTimeMillis()
-            ) / 30).coerceAtLeast(0)
-        } else 0L
-
         val isOnTrack = progressPercent > 0 && monthsRemaining > 0
 
-        _uiState.value = GoalDetailUiState(
-            isLoading = false,
+        _uiState.value = _uiState.value.copy(
             goal = goal,
             progressPercent = progressPercent,
             monthsRemaining = monthsRemaining,
             monthlyTargetNeeded = monthlyTargetNeeded,
-            isOnTrack = isOnTrack,
-            error = null
+            isOnTrack = isOnTrack
         )
     }
 }
