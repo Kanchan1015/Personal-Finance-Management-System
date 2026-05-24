@@ -3,6 +3,7 @@ package com.example.pbd.ui.screens.home
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -14,7 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.*
@@ -35,6 +36,9 @@ import com.example.pbd.navigation.Screen
 import org.koin.androidx.compose.koinViewModel
 import com.example.pbd.ui.screens.dashboard.DashboardViewModel
 import com.example.pbd.ui.screens.dashboard.components.GoalCard
+
+import com.example.pbd.ui.screens.dashboard.components.SpendingOverview
+import com.example.pbd.ui.screens.dashboard.components.IncomeOverview
 
 // ── Colour palette ────────────────────────────────────────────────────────────
 private val BgDark        = Color(0xFF0D0F1A)
@@ -93,7 +97,9 @@ fun HomeScreen(
                     balance = uiState.netBalance,
                     income = uiState.totalIncome,
                     expenses = uiState.totalExpenses,
-                    onClick = { navController.navigate(Screen.Dashboard.route) }
+                    onCardClick = { navController.navigate(Screen.Dashboard.route) },
+                    onIncomeClick = { navController.navigate(Screen.TransactionHistory.createRoute("income")) },
+                    onExpensesClick = { navController.navigate(Screen.TransactionHistory.createRoute("expense")) }
                 )
 
                 Spacer(Modifier.height(24.dp))
@@ -146,17 +152,17 @@ fun HomeScreen(
                     )
                     QuickActionItem(
                         modifier = Modifier.weight(1f),
-                        icon = Icons.AutoMirrored.Filled.List,
-                        label = "Expenses",
-                        iconBg = Brush.linearGradient(listOf(AccentBlue, AccentPurple)),
-                        onClick = { navController.navigate(Screen.TransactionHistory.route) }
-                    )
-                    QuickActionItem(
-                        modifier = Modifier.weight(1f),
                         icon = Icons.Filled.TrackChanges,
                         label = "Goals",
                         iconBg = Brush.linearGradient(listOf(AccentPurple, Color(0xFFE040FB))),
                         onClick = { navController.navigate(Screen.GoalDetail.createRoute("active")) }
+                    )
+                    QuickActionItem(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
+                        label = "Insights",
+                        iconBg = Brush.linearGradient(listOf(AccentBlue, Color(0xFF00B4D8))),
+                        onClick = { navController.navigate(Screen.Dashboard.route) }
                     )
                 }
 
@@ -180,15 +186,14 @@ fun HomeScreen(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable {
-                            navController.navigate(Screen.TransactionHistory.route)
+                            navController.navigate(Screen.TransactionHistory.createRoute("expense"))
                         }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                val categories = uiState.categoryBreakdown.toList()
-                if (categories.isEmpty()) {
+                if (uiState.categoryBreakdown.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -205,32 +210,54 @@ fun HomeScreen(
                         )
                     }
                 } else {
-                    val rows = categories.chunked(3)
-                    rows.forEachIndexed { rowIndex, rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            rowItems.forEach { (category, amount) ->
-                                val progress = if (uiState.totalExpenses > 0) (amount / uiState.totalExpenses).toFloat() else 0f
-                                SpendingCard(
-                                    label = category.lowercase().replaceFirstChar { it.uppercase() },
-                                    amount = "LKR %,.0f".format(amount),
-                                    color = getCategoryColor(category),
-                                    progress = progress,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (rowItems.size < 3) {
-                                repeat(3 - rowItems.size) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
+                    SpendingOverview(categoryBreakdown = uiState.categoryBreakdown)
+                }
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                // ── Income overview ─────────────────────────────────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Income Overview",
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "View More",
+                        color = AccentBlue,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable {
+                            navController.navigate(Screen.TransactionHistory.createRoute("income"))
                         }
-                        if (rowIndex < rows.size - 1) {
-                            Spacer(Modifier.height(12.dp))
-                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (uiState.incomeBreakdown.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(CardDark)
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No incomes recorded yet. Tap 'Add Income' to get started!",
+                            color = TextSecondary,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
                     }
+                } else {
+                    IncomeOverview(incomeBreakdown = uiState.incomeBreakdown)
                 }
             }
         }
@@ -306,14 +333,16 @@ private fun BalanceCard(
     balance: Double,
     income: Double,
     expenses: Double,
-    onClick: () -> Unit
+    onCardClick: () -> Unit,
+    onIncomeClick: () -> Unit,
+    onExpensesClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(CardGradient)
-            .clickable { onClick() }
+            .clickable { onCardClick() }
             .padding(24.dp)
     ) {
         Column {
@@ -330,19 +359,22 @@ private fun BalanceCard(
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(Modifier.height(20.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 BalanceStat(
                     label = "Income",
                     value = "LKR %,.0f".format(income),
-                    change = "Base currency",
                     color = AccentGreen,
+                    onClick = onIncomeClick,
                     modifier = Modifier.weight(1f)
                 )
                 BalanceStat(
                     label = "Expenses",
                     value = "LKR %,.0f".format(expenses),
-                    change = "Base currency",
                     color = AccentOrange,
+                    onClick = onExpensesClick,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -354,15 +386,46 @@ private fun BalanceCard(
 private fun BalanceStat(
     label: String,
     value: String,
-    change: String,
     color: Color,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-        Text(text = label, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
-        Spacer(Modifier.height(4.dp))
-        Text(text = value, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text(text = change, color = color, fontSize = 10.sp)
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.12f))
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.25f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable { onClick() }
+            .padding(14.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -415,68 +478,5 @@ private fun QuickActionItem(
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-@Composable
-private fun SpendingCard(
-    label: String,
-    amount: String,
-    color: Color,
-    progress: Float,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardDark)
-            .padding(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.2f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        Text(text = label, color = TextSecondary, fontSize = 11.sp)
-        Spacer(Modifier.height(2.dp))
-        Text(text = amount, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        // Mini bar
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(3.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(color.copy(alpha = 0.3f))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress.coerceIn(0f, 1f))
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(color)
-            )
-        }
-    }
-}
-
-private fun getCategoryColor(category: String): Color {
-    return when (category.uppercase()) {
-        "ESSENTIAL" -> AccentBlue
-        "DISCRETIONARY" -> AccentGreen
-        "SAVINGS" -> AccentPurple
-        "DEBT" -> Color(0xFFE91E63)
-        "INVESTMENT" -> AccentOrange
-        else -> TextSecondary
     }
 }

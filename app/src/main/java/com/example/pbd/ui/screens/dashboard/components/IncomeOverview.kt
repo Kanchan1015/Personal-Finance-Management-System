@@ -18,25 +18,21 @@ import androidx.compose.ui.unit.sp
 import com.example.pbd.ui.theme.*
 
 @Composable
-fun SpendingOverview(
-    categoryBreakdown: Map<String, Double>,
+fun IncomeOverview(
+    incomeBreakdown: Map<String, Double>,
     modifier: Modifier = Modifier
 ) {
-    val totalExpenses = categoryBreakdown.values.sum()
-    val categories = categoryBreakdown.toList()
+    val totalIncome = incomeBreakdown.values.sum()
+    val incomes = incomeBreakdown.toList()
 
     val categoryColors = mapOf(
-        "Shopping" to CategoryShopping,
-        "Housing" to CategoryHousing,
-        "Food" to CategoryFood,
-        "Transport" to CategoryTransport,
-        "COMMITTED" to CategoryHousing,
-        "DISCRETIONARY" to CategoryOthers
+        "Salary" to IncomeGreen,
+        "Freelance" to AccentGreen,
+        "Crypto" to AccentBlue
     )
 
     val defaultColors = listOf(
-        CategoryShopping, CategoryHousing,
-        CategoryFood, CategoryTransport, CategoryOthers
+        IncomeGreen, AccentGreen, AccentBlue, AccentPurple, AccentOrange
     )
 
     Row(
@@ -46,12 +42,12 @@ fun SpendingOverview(
             .height(IntrinsicSize.Max),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        categories.forEach { (category, amount) ->
-            val progress = if (totalExpenses > 0) (amount / totalExpenses).toFloat() else 0f
+        incomes.forEach { (category, amount) ->
+            val progress = if (totalIncome > 0) (amount / totalIncome).toFloat() else 0f
             val color = categoryColors[category]
-                ?: defaultColors[categories.indexOf(Pair(category, amount)) % defaultColors.size]
+                ?: defaultColors[incomes.indexOf(Pair(category, amount)) % defaultColors.size]
 
-            SpendingCard(
+            IncomeCard(
                 label = category.lowercase().replaceFirstChar { it.uppercase() },
                 amount = "LKR %,.0f".format(amount),
                 color = color,
@@ -65,7 +61,7 @@ fun SpendingOverview(
 }
 
 @Composable
-private fun SpendingCard(
+private fun IncomeCard(
     label: String,
     amount: String,
     color: Color,
