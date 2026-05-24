@@ -1,27 +1,29 @@
 package com.example.pbd.ui.screens.transactions
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.pbd.data.local.AppDatabase
 import com.example.pbd.data.model.Transaction
 import com.example.pbd.data.repository.FinanceRepository
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.pbd.data.repository.AuthRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class TransactionHistoryViewModel(application: Application) : AndroidViewModel(application) {
+class TransactionHistoryViewModel(
+    private val repository: FinanceRepository,
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
-    private val repository: FinanceRepository = FinanceRepository(
-        transactionDao = AppDatabase.getDatabase(application).transactionDao(),
-        recurringExpenseDao = AppDatabase.getDatabase(application).recurringExpenseDao(),
-        firestore = FirebaseFirestore.getInstance()
-    )
+    init {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: ""
+            if (userId.isNotEmpty()) {
+                repository.syncTransactionsFromFirestore(userId)
+            }
+        }
+    }
 
     // Flow that retrieves all transactions (both INCOME and EXPENSE) from the local
     // database and exposes them sorted newest-first.
@@ -49,12 +51,5 @@ class TransactionHistoryViewModel(application: Application) : AndroidViewModel(a
         viewModelScope.launch {
             repository.saveTransaction(transaction)
         }
-    }
-}
-
-class TransactionHistoryViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return TransactionHistoryViewModel(application) as T
     }
 }

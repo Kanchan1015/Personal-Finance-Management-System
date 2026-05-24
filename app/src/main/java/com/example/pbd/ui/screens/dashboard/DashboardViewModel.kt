@@ -9,6 +9,7 @@ import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.DashboardRepository
 import com.example.pbd.data.repository.FinanceRepository
 import com.example.pbd.data.repository.GoalRepository
+import com.example.pbd.data.repository.NotificationRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,14 +27,16 @@ data class DashboardUiState(
     val activeGoal: Goal? = null,
     val goalProgress: Float = 0f,
     val error: String? = null,
-    val userName: String = "User"
+    val userName: String = "User",
+    val unreadNotificationsCount: Int = 0
 )
 
 class DashboardViewModel(
     private val dashboardRepository: DashboardRepository,
     private val goalRepository: GoalRepository,
     private val financeRepository: FinanceRepository,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -43,6 +46,15 @@ class DashboardViewModel(
         loadTransactions()
         loadGoals()
         loadUserProfile()
+        loadUnreadNotifications()
+    }
+
+    private fun loadUnreadNotifications() {
+        viewModelScope.launch {
+            notificationRepository.unreadCount.collect { count ->
+                _uiState.value = _uiState.value.copy(unreadNotificationsCount = count)
+            }
+        }
     }
 
     private fun loadUserProfile() {
@@ -55,6 +67,14 @@ class DashboardViewModel(
     private fun loadTransactions() {
         viewModelScope.launch {
             val currentUserId = auth.currentUser?.uid ?: ""
+
+            // Asynchronously pull existing transactions from Firestore down to local Room DB
+            if (currentUserId.isNotEmpty()) {
+                launch {
+                    financeRepository.syncTransactionsFromFirestore(currentUserId)
+                }
+            }
+
             financeRepository.allTransactions.collect { allTransactions ->
                 val transactions = allTransactions.filter { it.userId == currentUserId }
 

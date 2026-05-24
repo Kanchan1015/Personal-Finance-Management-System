@@ -105,7 +105,9 @@ fun HomeScreen(
                 ) {
                     TopBar(
                         userName = uiState.userName,
-                        onAvatarClick = { navController.navigate(Screen.Profile.route) }
+                        unreadCount = uiState.unreadNotificationsCount,
+                        onAvatarClick = { navController.navigate(Screen.Profile.route) },
+                        onNotificationClick = { navController.navigate(Screen.NotificationCenter.route) }
                     )
                 }
 
@@ -316,7 +318,9 @@ fun HomeScreen(
 @Composable
 private fun TopBar(
     userName: String,
-    onAvatarClick: () -> Unit = {}
+    unreadCount: Int,
+    onAvatarClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -357,20 +361,36 @@ private fun TopBar(
 
         Spacer(Modifier.weight(1f))
 
-        // Bell icon
+        // Bell icon with click event and premium unread badge dot
         Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(CardDark),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.size(44.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.Notifications,
-                contentDescription = "Notifications",
-                tint = TextSecondary,
-                modifier = Modifier.size(22.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(CardDark)
+                    .clickable { onNotificationClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = "Notifications",
+                    tint = if (unreadCount > 0) TextPrimary else TextSecondary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            if (unreadCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .size(9.dp)
+                        .clip(CircleShape)
+                        .background(Color.Red)
+                        .align(Alignment.TopEnd)
+                        .offset(x = 2.dp, y = (-2).dp)
+                )
+            }
         }
     }
 }

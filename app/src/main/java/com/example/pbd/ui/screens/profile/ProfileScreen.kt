@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -89,7 +90,11 @@ fun ProfileScreen(
                     var editedName by remember { mutableStateOf(state.user.name) }
                     var editedCurrency by remember { mutableStateOf(state.user.baseCurrency) }
                     var editedSavingsPercentage by remember { mutableStateOf(state.user.savingsPercentage) }
-                    var editedNotifications by remember { mutableStateOf(state.user.notificationsEnabled) }
+                    var editedNotifications by remember { mutableStateOf(viewModel.notificationsEnabled) }
+                    var editedBudgetThreshold by remember { mutableStateOf(viewModel.budgetThreshold.toInt().toString()) }
+                    var editedLargeTransactionThreshold by remember { mutableStateOf(viewModel.largeTransactionThreshold.toInt().toString()) }
+                    var editedDailySummaryHour by remember { mutableStateOf(viewModel.dailySummaryHour.toString()) }
+                    var editedDailySummaryMinute by remember { mutableStateOf(viewModel.dailySummaryMinute.toString()) }
 
                     // Reset values when entering or leaving edit mode
                     LaunchedEffect(state.user, isEditMode) {
@@ -97,7 +102,11 @@ fun ProfileScreen(
                             editedName = state.user.name
                             editedCurrency = state.user.baseCurrency
                             editedSavingsPercentage = state.user.savingsPercentage
-                            editedNotifications = state.user.notificationsEnabled
+                            editedNotifications = viewModel.notificationsEnabled
+                            editedBudgetThreshold = viewModel.budgetThreshold.toInt().toString()
+                            editedLargeTransactionThreshold = viewModel.largeTransactionThreshold.toInt().toString()
+                            editedDailySummaryHour = viewModel.dailySummaryHour.toString()
+                            editedDailySummaryMinute = viewModel.dailySummaryMinute.toString()
                         }
                     }
 
@@ -219,8 +228,26 @@ fun ProfileScreen(
                                     DetailItem(
                                         icon = Icons.Default.Notifications,
                                         label = "Smart Reminders",
-                                        value = if (state.user.notificationsEnabled) "Enabled" else "Disabled"
+                                        value = if (viewModel.notificationsEnabled) "Enabled" else "Disabled"
                                     )
+
+                                    if (viewModel.notificationsEnabled) {
+                                        DetailItem(
+                                            icon = Icons.AutoMirrored.Filled.TrendingUp,
+                                            label = "Monthly Budget Limit",
+                                            value = "LKR %,.0f".format(viewModel.budgetThreshold)
+                                        )
+                                        DetailItem(
+                                            icon = Icons.Default.AttachMoney,
+                                            label = "Large Transaction Warning Limit",
+                                            value = "LKR %,.0f".format(viewModel.largeTransactionThreshold)
+                                        )
+                                        DetailItem(
+                                            icon = Icons.Default.Schedule,
+                                            label = "Daily Spending Summary Time",
+                                            value = "%02d:%02d".format(viewModel.dailySummaryHour, viewModel.dailySummaryMinute)
+                                        )
+                                    }
                                 }
                             }
 
@@ -392,6 +419,102 @@ fun ProfileScreen(
                                             )
                                         )
                                     }
+
+                                    if (editedNotifications) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Notification Settings",
+                                            color = TextSecondary,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+
+                                        // Monthly Budget Limit Field
+                                        OutlinedTextField(
+                                            value = editedBudgetThreshold,
+                                            onValueChange = { editedBudgetThreshold = it.filter { char -> char.isDigit() } },
+                                            label = { Text("Monthly Budget Limit (LKR)", color = TextSecondary) },
+                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                                            ),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = AccentPurple,
+                                                unfocusedBorderColor = TextSecondary,
+                                                focusedTextColor = TextPrimary,
+                                                unfocusedTextColor = TextPrimary
+                                            ),
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true
+                                        )
+
+                                        // Large Transaction Warning Limit Field
+                                        OutlinedTextField(
+                                            value = editedLargeTransactionThreshold,
+                                            onValueChange = { editedLargeTransactionThreshold = it.filter { char -> char.isDigit() } },
+                                            label = { Text("Large Transaction Limit (LKR)", color = TextSecondary) },
+                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                                            ),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = AccentPurple,
+                                                unfocusedBorderColor = TextSecondary,
+                                                focusedTextColor = TextPrimary,
+                                                unfocusedTextColor = TextPrimary
+                                            ),
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true
+                                        )
+
+                                        // Daily Reminder Timing Hour and Minute Input
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            OutlinedTextField(
+                                                value = editedDailySummaryHour,
+                                                onValueChange = { input ->
+                                                    val hourVal = input.filter { it.isDigit() }.toIntOrNull()
+                                                    if (hourVal == null || hourVal in 0..23) {
+                                                        editedDailySummaryHour = input.filter { it.isDigit() }.take(2)
+                                                    }
+                                                },
+                                                label = { Text("Reminder Hour (0-23)", color = TextSecondary) },
+                                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                                                ),
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    focusedBorderColor = AccentPurple,
+                                                    unfocusedBorderColor = TextSecondary,
+                                                    focusedTextColor = TextPrimary,
+                                                    unfocusedTextColor = TextPrimary
+                                                ),
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true
+                                            )
+
+                                            OutlinedTextField(
+                                                value = editedDailySummaryMinute,
+                                                onValueChange = { input ->
+                                                    val minVal = input.filter { it.isDigit() }.toIntOrNull()
+                                                    if (minVal == null || minVal in 0..59) {
+                                                        editedDailySummaryMinute = input.filter { it.isDigit() }.take(2)
+                                                    }
+                                                },
+                                                label = { Text("Minute (0-59)", color = TextSecondary) },
+                                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                                                ),
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    focusedBorderColor = AccentPurple,
+                                                    unfocusedBorderColor = TextSecondary,
+                                                    focusedTextColor = TextPrimary,
+                                                    unfocusedTextColor = TextPrimary
+                                                ),
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -412,13 +535,22 @@ fun ProfileScreen(
                                 Button(
                                     onClick = {
                                         if (editedName.isNotEmpty()) {
-                                            viewModel.updateUserProfile(
-                                                name = editedName,
-                                                baseCurrency = editedCurrency,
-                                                savingsPercentage = editedSavingsPercentage,
-                                                notificationsEnabled = editedNotifications
-                                            )
-                                            isEditMode = false
+                                            val budget = editedBudgetThreshold.toDoubleOrNull() ?: viewModel.budgetThreshold
+                                            val largeTx = editedLargeTransactionThreshold.toDoubleOrNull() ?: viewModel.largeTransactionThreshold
+                                            val hour = editedDailySummaryHour.toIntOrNull() ?: viewModel.dailySummaryHour
+                                            val minute = editedDailySummaryMinute.toIntOrNull() ?: viewModel.dailySummaryMinute
+
+                                             viewModel.updateUserProfile(
+                                                 name = editedName,
+                                                 baseCurrency = editedCurrency,
+                                                 savingsPercentage = editedSavingsPercentage,
+                                                 notificationsEnabled = editedNotifications,
+                                                 budget = budget,
+                                                 largeTx = largeTx,
+                                                 hour = hour,
+                                                 minute = minute
+                                             )
+                                             isEditMode = false
                                         }
                                     },
                                     modifier = Modifier.weight(1.5f),

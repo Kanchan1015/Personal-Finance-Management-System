@@ -14,6 +14,7 @@ import com.example.pbd.ui.screens.dashboard.DashboardScreen
 import com.example.pbd.ui.screens.goal.GoalDetailScreen
 import com.example.pbd.ui.screens.income.AddIncomeScreen
 import com.example.pbd.ui.screens.expense.AddExpenseScreen
+import com.example.pbd.ui.screens.notifications.NotificationCenterScreen
 import com.example.pbd.ui.screens.profile.ProfileScreen
 import com.example.pbd.ui.screens.transactions.TransactionHistoryScreen
 
@@ -66,5 +67,9 @@ fun AppNavigation(navController: NavHostController) {
         composable(Screen.AddExpense.route) {
             AddExpenseScreen(navController = navController)
         }
+        composable(Screen.NotificationCenter.route) {
+            NotificationCenterScreen(navController = navController)
+        }
     }
 }
+

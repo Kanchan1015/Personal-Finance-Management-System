@@ -1,17 +1,21 @@
 package com.example.pbd.di
 
 import com.example.pbd.data.local.AppDatabase
+import com.example.pbd.data.notification.NotificationPreferences
 import com.example.pbd.data.repository.AuthRepository
 import com.example.pbd.data.repository.AuthRepositoryImpl
 import com.example.pbd.data.repository.DashboardRepository
 import com.example.pbd.data.repository.FinanceRepository
 import com.example.pbd.data.repository.GoalRepository
+import com.example.pbd.data.repository.NotificationRepository
 import com.example.pbd.ui.screens.expense.ExpenseViewModel
 import com.example.pbd.ui.screens.auth.AuthViewModel
 import com.example.pbd.ui.screens.dashboard.DashboardViewModel
 import com.example.pbd.ui.screens.goal.GoalDetailViewModel
 import com.example.pbd.ui.screens.income.IncomeViewModel
+import com.example.pbd.ui.screens.notifications.NotificationViewModel
 import com.example.pbd.ui.screens.profile.ProfileViewModel
+import com.example.pbd.ui.screens.transactions.TransactionHistoryViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.android.ext.koin.androidContext
@@ -22,23 +26,31 @@ val appModule = module {
     // single { ... } means Koin will create only ONE instance of this for the whole app's lifecycle
     single { FirebaseAuth.getInstance() }
     single { FirebaseFirestore.getInstance() }
-    
+
     // Room Database & Daos
     single { AppDatabase.getDatabase(androidContext()) }
     single { get<AppDatabase>().transactionDao() }
     single { get<AppDatabase>().recurringExpenseDao() }
-    single { GoalRepository(get(), get()) }
-    
+    single { get<AppDatabase>().notificationDao() }
+
+    // Notification infrastructure
+    single { NotificationPreferences(androidContext()) }
+    single { NotificationRepository(get()) }
+
     // Repositories
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
-    single { FinanceRepository(get(), get(), get()) }
+    single { FinanceRepository(get(), get(), get(), androidContext(), get()) }
     single { DashboardRepository(get(), get()) }
-    
+    single { GoalRepository(get(), get(), androidContext(), get()) }
+
     // ViewModels
     viewModel { AuthViewModel(get()) }
-    viewModel { ProfileViewModel(get()) }
+    viewModel { ProfileViewModel(get(), get(), androidContext()) }
     viewModel { IncomeViewModel(get(), get(), get()) }
     viewModel { ExpenseViewModel(get(), get()) }
-    viewModel { DashboardViewModel(get(), get(), get(), get()) }
+    viewModel { DashboardViewModel(get(), get(), get(), get(), get()) }
     viewModel { GoalDetailViewModel(get(), get(), get()) }
+    viewModel { NotificationViewModel(get(), get()) }
+    viewModel { TransactionHistoryViewModel(get(), get()) }
 }
+
