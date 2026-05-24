@@ -24,12 +24,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -73,35 +77,122 @@ fun AddIncomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    var showInterceptSheet by remember { mutableStateOf(false) }
+    var interceptedAmountLKR by remember { mutableStateOf(0.0) }
+    var inputAmount by remember { mutableStateOf("") }
+    var inputCurrency by remember { mutableStateOf("LKR") }
+
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
+            val activeGoal = uiState.activeGoal
+            val amountLKR = if (inputCurrency == "LKR") inputAmount.toDoubleOrNull() ?: 0.0 else uiState.convertedAmountLKR
+            if (activeGoal != null && amountLKR > 0.0) {
+                interceptedAmountLKR = amountLKR
+                showInterceptSheet = true
+            } else {
+                android.widget.Toast.makeText(
+                    context,
+                    "Income added successfully!",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                navController.popBackStack()
+                viewModel.resetState()
+            }
+        }
+    }
+
+    LaunchedEffect(uiState.isRoutingSuccess) {
+        if (uiState.isRoutingSuccess) {
+            val routed = interceptedAmountLKR * 0.20
             android.widget.Toast.makeText(
                 context,
-                "Income added successfully!",
-                android.widget.Toast.LENGTH_SHORT
+                "LKR ${"%,.0f".format(routed)} routed to ${uiState.activeGoal?.title}!",
+                android.widget.Toast.LENGTH_LONG
             ).show()
+            showInterceptSheet = false
             navController.popBackStack()
             viewModel.resetState()
         }
     }
 
-    AddIncomeScreenContent(
-        uiState = uiState,
-        onClose = { navController.popBackStack() },
-        onFetchExchangeRate = { amount, currency ->
-            viewModel.fetchExchangeRate(
-                amount = amount,
-                currency = currency
-            )
-        },
-        onSaveIncome = { amount, currency, incomeType ->
-            viewModel.saveIncome(
-                amount = amount,
-                currency = currency,
-                category = incomeType.toTransactionCategory()
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        AddIncomeScreenContent(
+            uiState = uiState,
+            onClose = { navController.popBackStack() },
+            onFetchExchangeRate = { amount, currency ->
+                inputAmount = amount.toString()
+                inputCurrency = currency
+                viewModel.fetchExchangeRate(
+                    amount = amount,
+                    currency = currency
+                )
+            },
+            onSaveIncome = { amount, currency, incomeType ->
+                inputAmount = amount.toString()
+                inputCurrency = currency
+                viewModel.saveIncome(
+                    amount = amount,
+                    currency = currency,
+                    category = incomeType.toTransactionCategory()
+                )
+            }
+        )
+
+        if (showInterceptSheet) {
+            val activeGoal = uiState.activeGoal
+            if (activeGoal != null) {
+                val routedAmount = interceptedAmountLKR * 0.20
+                AlertDialog(
+                    onDismissRequest = {
+                        showInterceptSheet = false
+                        android.widget.Toast.makeText(context, "Income added successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                        navController.popBackStack()
+                        viewModel.resetState()
+                    },
+                    containerColor = DarkCard,
+                    title = {
+                        Text(
+                            text = "Smart Savings Route",
+                            color = WhiteText,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = "LKR ${"%,.0f".format(interceptedAmountLKR)} income logged. Would you like to route 20% (LKR ${"%,.0f".format(routedAmount)}) directly to your ${activeGoal.title} fund?",
+                                color = LabelGray,
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                viewModel.routeSavingsToGoal(interceptedAmountLKR, activeGoal)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = GradientStart)
+                        ) {
+                            Text("Route Savings")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showInterceptSheet = false
+                                android.widget.Toast.makeText(context, "Income added successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                                navController.popBackStack()
+                                viewModel.resetState()
+                            }
+                        ) {
+                            Text("Keep Full Income", color = LabelGray)
+                        }
+                    }
+                )
+            }
         }
-    )
+    }
 }
 
 @Composable

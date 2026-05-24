@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class GoalRepository(
     private val firestore: FirebaseFirestore,
@@ -62,6 +63,21 @@ class GoalRepository(
             "status" to "ACTIVE"
         )
         firestore.collection("goals").add(goal)
+    }
+
+    suspend fun updateGoalSavedAmount(goalId: String, addedAmount: Double) {
+        val docRef = firestore.collection("goals").document(goalId)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val currentSaved = snapshot.getDouble("currentSaved") ?: 0.0
+            val targetAmount = snapshot.getDouble("targetAmount") ?: 0.0
+            val newSaved = currentSaved + addedAmount
+            val status = if (newSaved >= targetAmount) "COMPLETED" else "ACTIVE"
+            transaction.update(docRef, mapOf(
+                "currentSaved" to newSaved,
+                "status" to status
+            ))
+        }.await()
     }
 
     suspend fun deleteGoal(goalId: String) {

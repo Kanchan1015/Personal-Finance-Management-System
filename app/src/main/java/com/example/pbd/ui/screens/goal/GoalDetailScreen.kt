@@ -23,6 +23,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.scale
 import androidx.navigation.NavHostController
 import com.example.pbd.data.model.Goal
 import com.example.pbd.ui.theme.*
@@ -152,8 +159,61 @@ fun GoalDetailScreen(
                     uiState.goals.forEach { goal ->
                         GoalCard(
                             goal = goal,
-                            onDelete = { goalToDelete = goal }
+                            onDelete = { goalToDelete = goal },
+                            onBoost = { amount -> viewModel.boostGoal(goal.id, amount, goal.title) }
                         )
+                    }
+
+                    // Contextual Velocity framing widget
+                    if (uiState.discretionarySpend30Days > 0.0) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = DarkCard),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentPurple.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(AccentPurple.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.TrackChanges,
+                                            contentDescription = null,
+                                            tint = AccentPurple,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Goal Speed Optimization",
+                                            color = TextPrimary,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Discretionary items compiler timeline delay",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "You spent LKR ${"%,.0f".format(uiState.discretionarySpend30Days)} on Discretionary purchases (Food, Coffee, Shopping) in the last 30 days. Redirecting just 20% of this (LKR ${"%,.0f".format(uiState.discretionarySpend30Days * 0.2)}) gets you your high-speed MacBook Pro compiler ${uiState.daysSavedWith20PercentRedirect} days faster!",
+                                    color = TextPrimary,
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp
+                                )
+                            }
+                        }
                     }
 
                     // Add another goal button at the bottom
@@ -237,8 +297,11 @@ fun GoalDetailScreen(
 @Composable
 private fun GoalCard(
     goal: Goal,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onBoost: (Double) -> Unit
 ) {
+    var showCustomBoostDialog by remember { mutableStateOf(false) }
+
     val progressPercent = if (goal.targetAmount > 0) {
         ((goal.currentSaved / goal.targetAmount) * 100).toInt().coerceIn(0, 100)
     } else 0
@@ -313,12 +376,148 @@ private fun GoalCard(
                 LinearProgressIndicator(
                     progress = { progressPercent / 100f },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
+                         .fillMaxWidth()
+                         .height(8.dp)
+                         .clip(RoundedCornerShape(4.dp)),
                     color = Color.White,
                     trackColor = Color.White.copy(alpha = 0.3f)
                 )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val boostAmounts = listOf(500.0, 1000.0, 5000.0)
+                    boostAmounts.forEach { amount ->
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val isPressed by interactionSource.collectIsPressedAsState()
+                        val scale by animateFloatAsState(
+                            targetValue = if (isPressed) 0.94f else 1f,
+                            animationSpec = tween(80),
+                            label = "scale"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .scale(scale)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White.copy(alpha = 0.15f))
+                                .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null,
+                                    onClick = { onBoost(amount) }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "+${"%,.0f".format(amount)}",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    // A fourth chip for Custom amount
+                    val customInteractionSource = remember { MutableInteractionSource() }
+                    val customIsPressed by customInteractionSource.collectIsPressedAsState()
+                    val customScale by animateFloatAsState(
+                        targetValue = if (customIsPressed) 0.94f else 1f,
+                        animationSpec = tween(80),
+                        label = "scale"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
+                            .scale(customScale)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.15f))
+                            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                            .clickable(
+                                interactionSource = customInteractionSource,
+                                indication = null,
+                                onClick = { showCustomBoostDialog = true }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Custom",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                if (showCustomBoostDialog) {
+                    var customAmount by remember { mutableStateOf("") }
+                    AlertDialog(
+                        onDismissRequest = { showCustomBoostDialog = false },
+                        containerColor = DarkCard,
+                        title = {
+                            Text(
+                                text = "Add Manual Savings",
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(
+                                    text = "Enter a custom LKR amount to save directly toward this goal.",
+                                    color = TextSecondary,
+                                    fontSize = 14.sp
+                                )
+                                OutlinedTextField(
+                                    value = customAmount,
+                                    onValueChange = { newValue ->
+                                        if (newValue.isEmpty() || newValue.matches(Regex("^\\d*$"))) {
+                                            customAmount = newValue
+                                        }
+                                    },
+                                    label = { Text("Savings Amount (LKR)", color = TextSecondary) },
+                                    placeholder = { Text("e.g. 2500", color = TextHint) },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AccentPurple,
+                                        unfocusedBorderColor = TextSecondary,
+                                        focusedTextColor = TextPrimary,
+                                        unfocusedTextColor = TextPrimary
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    val amountDouble = customAmount.toDoubleOrNull() ?: 0.0
+                                    if (amountDouble > 0.0) {
+                                        onBoost(amountDouble)
+                                    }
+                                    showCustomBoostDialog = false
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                                enabled = customAmount.isNotEmpty()
+                            ) {
+                                Text("Add Savings")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showCustomBoostDialog = false }) {
+                                Text("Cancel", color = TextSecondary)
+                            }
+                        }
+                    )
+                }
             }
         }
 

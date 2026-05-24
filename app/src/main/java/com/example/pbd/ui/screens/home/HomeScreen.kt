@@ -34,6 +34,7 @@ import androidx.navigation.NavHostController
 import com.example.pbd.navigation.Screen
 import org.koin.androidx.compose.koinViewModel
 import com.example.pbd.ui.screens.dashboard.DashboardViewModel
+import com.example.pbd.ui.screens.dashboard.components.GoalCard
 
 // ── Colour palette ────────────────────────────────────────────────────────────
 private val BgDark        = Color(0xFF0D0F1A)
@@ -91,10 +92,50 @@ fun HomeScreen(
                 BalanceCard(
                     balance = uiState.netBalance,
                     income = uiState.totalIncome,
-                    expenses = uiState.totalExpenses
+                    expenses = uiState.totalExpenses,
+                    onClick = { navController.navigate(Screen.Dashboard.route) }
                 )
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(24.dp))
+
+                // ── Goal Card ───────────────────────────────────────────────────
+                uiState.activeGoal?.let { goal ->
+                    GoalCard(
+                        goal = goal,
+                        progress = uiState.goalProgress,
+                        onBoost = { amount -> viewModel.boostActiveGoal(amount) },
+                        onClick = { navController.navigate(Screen.GoalDetail.createRoute(goal.id)) }
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardDark.copy(alpha = 0.6f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.TrackChanges,
+                                contentDescription = null,
+                                tint = AccentPurple,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Compile Acceleration: Tapping Boost gets you your high-speed MacBook compiler sooner!",
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                }
 
                 // ── Section title ─────────────────────────────────────────────────
                 Text(
@@ -283,13 +324,15 @@ private fun TopBar(
 private fun BalanceCard(
     balance: Double,
     income: Double,
-    expenses: Double
+    expenses: Double,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(CardGradient)
+            .clickable { onClick() }
             .padding(24.dp)
     ) {
         Column {

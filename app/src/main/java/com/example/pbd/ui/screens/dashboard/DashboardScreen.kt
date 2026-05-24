@@ -13,6 +13,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavHostController
 import com.example.pbd.ui.screens.dashboard.components.*
 import com.example.pbd.ui.theme.*
+import com.example.pbd.navigation.Screen
 
 @Composable
 fun DashboardScreen(
@@ -50,7 +51,9 @@ fun DashboardScreen(
         uiState.activeGoal?.let { goal ->
             GoalCard(
                 goal = goal,
-                progress = uiState.goalProgress
+                progress = uiState.goalProgress,
+                onBoost = { amount -> viewModel.boostActiveGoal(amount) },
+                onClick = { navController.navigate(Screen.GoalDetail.createRoute(goal.id)) }
             )
         }
 
