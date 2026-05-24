@@ -80,7 +80,10 @@ fun HomeScreen(
                 Spacer(Modifier.height(48.dp))
 
                 // ── Top bar ──────────────────────────────────────────────────────
-                TopBar(userName = uiState.userName)
+                TopBar(
+                    userName = uiState.userName,
+                    onAvatarClick = { navController.navigate(Screen.Dashboard.route) }
+                )
 
                 Spacer(Modifier.height(24.dp))
 
@@ -215,20 +218,29 @@ fun HomeScreen(
 // ── Sub-composables ───────────────────────────────────────────────────────────
 
 @Composable
-private fun TopBar(userName: String) {
+private fun TopBar(
+    userName: String,
+    onAvatarClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar placeholder
+        // Avatar placeholder — clickable to navigate to dashboard
         Box(
             modifier = Modifier
                 .size(44.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.linearGradient(listOf(AccentPurple, AccentBlue))),
+                .background(Brush.linearGradient(listOf(AccentPurple, AccentBlue)))
+                .clickable { onAvatarClick() },
             contentAlignment = Alignment.Center
         ) {
-            Text(userName.take(1).uppercase(), color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            Text(
+                userName.take(1).uppercase(),
+                color = TextPrimary,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.sp
+            )
         }
 
         Spacer(Modifier.width(12.dp))
