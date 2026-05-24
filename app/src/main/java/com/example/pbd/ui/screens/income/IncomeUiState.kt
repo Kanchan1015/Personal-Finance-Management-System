@@ -11,5 +11,6 @@ data class IncomeUiState(
     val isExchangeRateLoading: Boolean = false,
     val exchangeRateErrorMessage: String? = null,
     val activeGoal: Goal? = null,
-    val isRoutingSuccess: Boolean = false
+    val isRoutingSuccess: Boolean = false,
+    val savingsPercentage: Int = 20
 )

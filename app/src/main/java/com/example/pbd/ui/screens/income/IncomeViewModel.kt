@@ -13,6 +13,7 @@ import com.example.pbd.data.model.TransactionCategory
 import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.FinanceRepository
 import com.example.pbd.data.repository.GoalRepository
+import com.example.pbd.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ class IncomeViewModel(
 
     init {
         loadActiveGoal()
+        loadUserProfilePreferences()
     }
 
     private fun loadActiveGoal() {
@@ -41,6 +43,24 @@ class IncomeViewModel(
             goalRepository.getAllGoals().collect { goals ->
                 val activeGoal = goals.firstOrNull { it.status == "ACTIVE" }
                 _uiState.value = _uiState.value.copy(activeGoal = activeGoal)
+            }
+        }
+    }
+
+    private fun loadUserProfilePreferences() {
+        val currentUserId = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                FirebaseFirestore.getInstance().collection("users").document(currentUserId)
+                    .get()
+                    .addOnSuccessListener { doc ->
+                        val user = doc.toObject(User::class.java)
+                        if (user != null) {
+                            _uiState.value = _uiState.value.copy(savingsPercentage = user.savingsPercentage)
+                        }
+                    }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load user profile preferences", e)
             }
         }
     }
