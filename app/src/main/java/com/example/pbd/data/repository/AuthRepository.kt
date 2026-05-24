@@ -8,6 +8,7 @@ import kotlinx.coroutines.tasks.await
 interface AuthRepository {
     suspend fun login(email: String, password: String): Result<User>
     suspend fun register(name: String, email: String, password: String): Result<User>
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit>
     suspend fun getUserProfile(userId: String): Result<User>
     fun getCurrentUserId(): String?
     fun logout()
@@ -57,6 +58,15 @@ class AuthRepositoryImpl(
             usersCollection.document(userId).set(newUser).await()
 
             Result.success(newUser)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

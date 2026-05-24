@@ -53,6 +53,8 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
     
     // Observe the authentication state from the ViewModel
     val authState by viewModel.authState.collectAsState()
@@ -70,6 +72,15 @@ fun LoginScreen(
             }
             is AuthState.Error -> {
                 Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_LONG).show()
+                viewModel.resetState()
+            }
+            is AuthState.PasswordResetSent -> {
+                Toast.makeText(
+                    context,
+                    "Password reset email sent to ${(authState as AuthState.PasswordResetSent).email}",
+                    Toast.LENGTH_LONG
+                ).show()
+                showForgotPasswordDialog = false
                 viewModel.resetState()
             }
             else -> Unit
@@ -201,6 +212,21 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Forgot password?",
+                color = GradientEnd,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clickable {
+                        resetEmail = email
+                        showForgotPasswordDialog = true
+                    }
+            )
+
             Spacer(modifier = Modifier.height(40.dp))
 
             // ── Login Action Button ───────────────────────────────────────
@@ -283,6 +309,70 @@ fun LoginScreen(
                         )
                     )
                 )
+        )
+    }
+
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgotPasswordDialog = false },
+            containerColor = DarkCard,
+            title = {
+                Text(
+                    text = "Reset Password",
+                    color = WhiteText,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Enter the email address linked to your account.",
+                        color = LabelGray,
+                        fontSize = 14.sp
+                    )
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("Email Address") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = null,
+                                tint = LabelGray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GradientStart,
+                            unfocusedBorderColor = DarkBorder,
+                            focusedContainerColor = DarkBackground,
+                            unfocusedContainerColor = DarkBackground,
+                            focusedLabelColor = GradientStart,
+                            unfocusedLabelColor = LabelGray,
+                            focusedTextColor = WhiteText,
+                            unfocusedTextColor = WhiteText
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.sendPasswordResetEmail(resetEmail) },
+                    enabled = authState !is AuthState.Loading && resetEmail.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = GradientStart)
+                ) {
+                    Text("Send Email")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForgotPasswordDialog = false }) {
+                    Text("Cancel", color = LabelGray)
+                }
+            }
         )
     }
 }

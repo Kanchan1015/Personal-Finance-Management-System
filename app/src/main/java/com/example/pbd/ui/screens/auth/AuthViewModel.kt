@@ -14,6 +14,7 @@ sealed class AuthState {
     object Idle : AuthState() // Initial state before any action is taken
     object Loading : AuthState() // When a network request is in progress
     data class Success(val user: User) : AuthState() // On successful login/registration
+    data class PasswordResetSent(val email: String) : AuthState()
     data class Error(val message: String) : AuthState() // On failure with an error message
 }
 
@@ -48,6 +49,27 @@ class AuthViewModel(
             result.fold(
                 onSuccess = { user -> _authState.value = AuthState.Success(user) },
                 onFailure = { e -> _authState.value = AuthState.Error(e.message ?: "An unknown error occurred during registration") }
+            )
+        }
+    }
+
+    fun sendPasswordResetEmail(email: String) {
+        val trimmedEmail = email.trim()
+        if (trimmedEmail.isEmpty()) {
+            _authState.value = AuthState.Error("Enter your email address first")
+            return
+        }
+
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            val result = authRepository.sendPasswordResetEmail(trimmedEmail)
+            result.fold(
+                onSuccess = { _authState.value = AuthState.PasswordResetSent(trimmedEmail) },
+                onFailure = { e ->
+                    _authState.value = AuthState.Error(
+                        e.message ?: "Unable to send password reset email"
+                    )
+                }
             )
         }
     }
