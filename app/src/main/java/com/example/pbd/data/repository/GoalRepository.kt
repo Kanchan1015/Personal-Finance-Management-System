@@ -63,4 +63,8 @@ class GoalRepository(
         )
         firestore.collection("goals").add(goal)
     }
+
+    suspend fun deleteGoal(goalId: String) {
+        firestore.collection("goals").document(goalId).delete()
+    }
 }

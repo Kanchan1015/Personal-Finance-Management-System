@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit
 
 data class GoalDetailUiState(
     val isLoading: Boolean = true,
+    val goals: List<Goal> = emptyList(),
     val goal: Goal? = null,
     val progressPercent: Int = 0,
     val monthsRemaining: Long = 0,
@@ -28,19 +29,25 @@ class GoalDetailViewModel(private val repository: GoalRepository) : ViewModel() 
     fun loadGoal(goalId: String) {
         viewModelScope.launch {
             repository.getAllGoals().collect { goals ->
-                val goal = if (goalId == "active" || goalId.isEmpty()) {
-                    goals.firstOrNull()
-                } else {
-                    goals.find { it.id == goalId } ?: goals.firstOrNull()
-                }
-
-                if (goal != null) {
-                    calculateAndUpdate(goal)
-                } else {
+                if (goals.isEmpty()) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
+                        goals = emptyList(),
+                        goal = null,
                         error = "No active goal found"
                     )
+                } else {
+                    val primaryGoal = if (goalId == "active" || goalId.isEmpty()) {
+                        goals.first()
+                    } else {
+                        goals.find { it.id == goalId } ?: goals.first()
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        goals = goals,
+                        error = null
+                    )
+                    calculateAndUpdate(primaryGoal)
                 }
             }
         }
@@ -49,6 +56,12 @@ class GoalDetailViewModel(private val repository: GoalRepository) : ViewModel() 
     fun addGoal(title: String, targetAmount: Double, months: Int) {
         viewModelScope.launch {
             repository.addGoal(title, targetAmount, months)
+        }
+    }
+
+    fun deleteGoal(goalId: String) {
+        viewModelScope.launch {
+            repository.deleteGoal(goalId)
         }
     }
 
@@ -69,14 +82,12 @@ class GoalDetailViewModel(private val repository: GoalRepository) : ViewModel() 
 
         val isOnTrack = progressPercent > 0 && monthsRemaining > 0
 
-        _uiState.value = GoalDetailUiState(
-            isLoading = false,
+        _uiState.value = _uiState.value.copy(
             goal = goal,
             progressPercent = progressPercent,
             monthsRemaining = monthsRemaining,
             monthlyTargetNeeded = monthlyTargetNeeded,
-            isOnTrack = isOnTrack,
-            error = null
+            isOnTrack = isOnTrack
         )
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.pbd.data.model.Goal
 import com.example.pbd.ui.theme.*
 import org.koin.androidx.compose.koinViewModel
 
@@ -39,13 +41,14 @@ fun GoalDetailScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     var showAddGoalDialog by remember { mutableStateOf(false) }
+    var goalToDelete by remember { mutableStateOf<Goal?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Goal Details",
+                        text = "Goal Tracker",
                         color = TextPrimary,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -56,6 +59,15 @@ fun GoalDetailScreen(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
                             tint = TextPrimary
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showAddGoalDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Goal",
+                            tint = AccentPurple
                         )
                     }
                 },
@@ -77,7 +89,7 @@ fun GoalDetailScreen(
                 }
             }
 
-            uiState.error != null -> {
+            uiState.error != null && uiState.goals.isEmpty() -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -102,7 +114,7 @@ fun GoalDetailScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Set a goal to track your progress toward purchasing the MacBook Pro M4",
+                            text = "Set a goal to track your savings progress",
                             color = TextSecondary,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center
@@ -128,166 +140,49 @@ fun GoalDetailScreen(
                 }
             }
 
-            uiState.goal != null -> {
-                val goal = uiState.goal!!
+            else -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Goal hero card
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(GradientStart, GradientEnd)
-                                )
-                            )
-                            .padding(24.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = goal.title,
-                                color = Color.White,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Savings Goal",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Text(
-                                text = "${uiState.progressPercent}%",
-                                color = Color.White,
-                                fontSize = 40.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "of target reached",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            LinearProgressIndicator(
-                                progress = { uiState.progressPercent / 100f },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = Color.White,
-                                trackColor = Color.White.copy(alpha = 0.3f)
-                            )
-                        }
-                    }
-
-                    // Stats row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        StatCard(
-                            label = "Saved",
-                            value = "LKR ${"%,.0f".format(goal.currentSaved)}",
-                            color = IncomeGreen,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            label = "Target",
-                            value = "LKR ${"%,.0f".format(goal.targetAmount)}",
-                            color = AccentPurple,
-                            modifier = Modifier.weight(1f)
+                    uiState.goals.forEach { goal ->
+                        GoalCard(
+                            goal = goal,
+                            onDelete = { goalToDelete = goal }
                         )
                     }
 
-                    Row(
+                    // Add another goal button at the bottom
+                    OutlinedButton(
+                        onClick = { showAddGoalDialog = true },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = AccentPurple
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, AccentPurple
+                        )
                     ) {
-                        StatCard(
-                            label = "Months Left",
-                            value = "${uiState.monthsRemaining}",
-                            color = AccentBlue,
-                            modifier = Modifier.weight(1f)
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
                         )
-                        StatCard(
-                            label = "Monthly Need",
-                            value = "LKR ${"%,.0f".format(uiState.monthlyTargetNeeded)}",
-                            color = AccentOrange,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Add Another Goal", fontSize = 15.sp)
                     }
 
-                    // Status card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = DarkCard)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.isOnTrack)
-                                    Icons.Default.CheckCircle
-                                else
-                                    Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = if (uiState.isOnTrack) IncomeGreen else AccentOrange,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = if (uiState.isOnTrack) "On Track" else "Needs Attention",
-                                    color = if (uiState.isOnTrack) IncomeGreen else AccentOrange,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = if (uiState.isOnTrack)
-                                        "You are making good progress toward your goal."
-                                    else
-                                        "Save LKR ${"%,.0f".format(uiState.monthlyTargetNeeded)} per month to reach your goal.",
-                                    color = TextSecondary,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }
-                    }
-
-                    // Remaining amount
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = DarkCard)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Amount Remaining",
-                                color = TextSecondary,
-                                fontSize = 13.sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "LKR ${"%,.0f".format(goal.targetAmount - goal.currentSaved)}",
-                                color = TextPrimary,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
 
+        // Add goal dialog
         if (showAddGoalDialog) {
             AddGoalDialog(
                 onDismiss = { showAddGoalDialog = false },
@@ -297,6 +192,237 @@ fun GoalDetailScreen(
                 }
             )
         }
+
+        // Delete confirmation dialog
+        goalToDelete?.let { goal ->
+            AlertDialog(
+                onDismissRequest = { goalToDelete = null },
+                containerColor = DarkCard,
+                title = {
+                    Text(
+                        text = "Delete Goal",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to delete \"${goal.title}\"? This cannot be undone.",
+                        color = TextSecondary
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.deleteGoal(goal.id)
+                            goalToDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ExpenseRed
+                        )
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { goalToDelete = null }) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun GoalCard(
+    goal: Goal,
+    onDelete: () -> Unit
+) {
+    val progressPercent = if (goal.targetAmount > 0) {
+        ((goal.currentSaved / goal.targetAmount) * 100).toInt().coerceIn(0, 100)
+    } else 0
+
+    val monthsRemaining = if (goal.deadline > 0) {
+        val diff = goal.deadline - System.currentTimeMillis()
+        if (diff > 0) (diff / (30L * 24 * 60 * 60 * 1000)) else 0L
+    } else 0L
+
+    val amountRemaining = goal.targetAmount - goal.currentSaved
+    val monthlyNeeded = if (monthsRemaining > 0) amountRemaining / monthsRemaining else amountRemaining
+    val isOnTrack = progressPercent > 0 && monthsRemaining > 0
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+        // Hero card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(GradientStart, GradientEnd)
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = goal.title,
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Savings Goal",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 13.sp
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Goal",
+                            tint = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "$progressPercent%",
+                    color = Color.White,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "of target reached",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 13.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LinearProgressIndicator(
+                    progress = { progressPercent / 100f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.3f)
+                )
+            }
+        }
+
+        // Stats row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                label = "Saved",
+                value = "LKR ${"%,.0f".format(goal.currentSaved)}",
+                color = IncomeGreen,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                label = "Target",
+                value = "LKR ${"%,.0f".format(goal.targetAmount)}",
+                color = AccentPurple,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                label = "Months Left",
+                value = "$monthsRemaining",
+                color = AccentBlue,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                label = "Monthly Need",
+                value = "LKR ${"%,.0f".format(monthlyNeeded)}",
+                color = AccentOrange,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Status card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = DarkCard)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = if (isOnTrack) Icons.Default.CheckCircle
+                    else Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = if (isOnTrack) IncomeGreen else AccentOrange,
+                    modifier = Modifier.size(28.dp)
+                )
+                Column {
+                    Text(
+                        text = if (isOnTrack) "On Track" else "Needs Attention",
+                        color = if (isOnTrack) IncomeGreen else AccentOrange,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (isOnTrack)
+                            "You are making good progress toward your goal."
+                        else
+                            "Save LKR ${"%,.0f".format(monthlyNeeded)} per month to reach your goal.",
+                        color = TextSecondary,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+
+        // Remaining amount
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = DarkCard)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Amount Remaining",
+                    color = TextSecondary,
+                    fontSize = 13.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "LKR ${"%,.0f".format(amountRemaining)}",
+                    color = TextPrimary,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        HorizontalDivider(
+            color = DarkCard,
+            thickness = 1.dp,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
     }
 }
 
@@ -305,8 +431,8 @@ private fun AddGoalDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, Double, Int) -> Unit
 ) {
-    var title by remember { mutableStateOf("MacBook Pro M4") }
-    var targetAmount by remember { mutableStateOf("490000") }
+    var title by remember { mutableStateOf("") }
+    var targetAmount by remember { mutableStateOf("") }
     var months by remember { mutableStateOf("12") }
 
     AlertDialog(
@@ -314,7 +440,7 @@ private fun AddGoalDialog(
         containerColor = DarkCard,
         title = {
             Text(
-                text = "Set Savings Goal",
+                text = "New Savings Goal",
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
             )
@@ -325,6 +451,7 @@ private fun AddGoalDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("Goal Name", color = TextSecondary) },
+                    placeholder = { Text("e.g. MacBook Pro M4", color = TextHint) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = AccentPurple,
                         unfocusedBorderColor = TextSecondary,
@@ -337,6 +464,7 @@ private fun AddGoalDialog(
                     value = targetAmount,
                     onValueChange = { targetAmount = it },
                     label = { Text("Target Amount (LKR)", color = TextSecondary) },
+                    placeholder = { Text("e.g. 490000", color = TextHint) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = AccentPurple,
                         unfocusedBorderColor = TextSecondary,
@@ -349,6 +477,7 @@ private fun AddGoalDialog(
                     value = months,
                     onValueChange = { months = it },
                     label = { Text("Target Months", color = TextSecondary) },
+                    placeholder = { Text("e.g. 12", color = TextHint) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = AccentPurple,
                         unfocusedBorderColor = TextSecondary,
@@ -362,9 +491,11 @@ private fun AddGoalDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val target = targetAmount.toDoubleOrNull() ?: 490000.0
+                    val target = targetAmount.toDoubleOrNull() ?: return@Button
                     val monthsInt = months.toIntOrNull() ?: 12
-                    onConfirm(title, target, monthsInt)
+                    if (title.isNotBlank()) {
+                        onConfirm(title, target, monthsInt)
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = AccentPurple)
             ) {
