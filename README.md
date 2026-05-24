@@ -1,473 +1,234 @@
 # Personal Finance Management System
 
-An Android personal finance application built with Kotlin and Jetpack Compose for tracking income, expenses, goals, recurring spending, and dashboard summaries with offline-first transaction persistence.
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.22-purple.svg?style=flat&logo=kotlin)](https://kotlinlang.org)
+[![Android Compile SDK](https://img.shields.io/badge/Android%20CompileSDK-35-green.svg?style=flat&logo=android)](https://developer.android.com)
+[![Room Database](https://img.shields.io/badge/Room%20DB-2.6.1-blue.svg?style=flat&logo=sqlite)](https://developer.android.com/training/data-storage/room)
+[![Koin DI](https://img.shields.io/badge/Koin%20DI-3.5.3-orange.svg?style=flat)](https://insert-koin.io)
+[![Retrofit API](https://img.shields.io/badge/Retrofit-2.11.0-red.svg?style=flat)](https://square.github.io/retrofit/)
+[![Firebase](https://img.shields.io/badge/Firebase%20BOM-32.8.0-yellow.svg?style=flat&logo=firebase)](https://firebase.google.com)
 
-## Overview
+A robust, modern Android personal finance application built with **Kotlin** and **Jetpack Compose**. Designed with an **offline-first local persistence architecture**, it offers seamless tracking of incomes and expenses across currencies, savings goals tracking, recurring spending automation, customizable budget alerts, and an in-app Notification Center.
 
-This project is structured as a modern Android app using:
+---
 
-- Jetpack Compose for UI
-- MVVM-style presentation flow
-- Room for local persistence
-- Firebase Authentication for user identity
-- Cloud Firestore for cloud-backed data
-- WorkManager for background sync and recurring-expense processing
-- Retrofit for live exchange-rate retrieval
-- Koin for dependency injection
+## 🌟 Architecture & Core Flows
 
-The app’s most notable implemented flow is the Income & Currency Engine:
-
-- users can add income in `LKR`, `USD`, or `USDT`
-- foreign currency is converted live into `LKR`
-- the original amount and currency are preserved
-- a normalized `baseAmountLKR` is stored for totals, balance calculation, and dashboard usage
-- transactions are saved Room-first so the app remains usable offline
-
-## Implemented Features
-
-### Authentication
-
-- user registration with Firebase Authentication
-- user login with Firebase Authentication
-- Google Sign-In through Firebase Authentication
-- password reset email flow for email/password accounts
-- basic auth input validation for name, email, and password fields
-- Firestore-backed user profile creation and retrieval
-- logout support
-
-### Income Management
-
-- Add Income screen with:
-  - amount input
-  - currency selection
-  - income-type selection
-  - live exchange-rate preview
-- supported income currencies:
-  - `LKR`
-  - `USD`
-  - `USDT`
-- supported income categories:
-  - `Salary`
-  - `Freelance`
-  - `Crypto`
-- validation and loading/error handling during conversion and save
-
-### Expense Management
-
-- Add Expense screen
-- category and subcategory-based expense recording
-- note support
-- direct `LKR`-based expense persistence
-- optional recurring-expense scheduling
-
-### Income & Currency Engine
-
-- live exchange-rate lookup through `https://open.er-api.com/`
-- conversion of foreign income into normalized `LKR`
-- persistence of:
-  - original amount
-  - original currency
-  - exchange rate used
-  - converted `baseAmountLKR`
-- Room-first save flow with background Firestore sync
-
-### Offline-First Transaction Persistence
-
-- transactions are inserted into Room immediately
-- Firestore upload happens asynchronously
-- failed sync leaves transactions locally available with `isSynced = false`
-- `SyncWorker` retries unsynced transactions when connectivity returns
-
-### Dashboard
-
-- total income calculation
-- total expense calculation
-- net balance calculation
-- recent transactions section
-- expense category breakdown
-- active goal display and goal progress
-- Room-first transaction totals so newly saved income appears immediately without waiting for Firestore sync
-
-### Transaction History
-
-- shows both `INCOME` and `EXPENSE`
-- grouped and filtered transaction list
-- totals based on normalized `LKR` values
-
-### Goal Tracking
-
-- Firestore-backed goal storage
-- active-goal listing
-- progress percentage
-- monthly target estimation
-- deadline-based calculations
-
-### Recurring Expense Automation
-
-- local recurring-expense templates
-- periodic background processing
-- automatic generation of due expense transactions
-
-### Notifications & Reminders
-
-- in-app Notification Center with persisted notification history
-- unread notification count shown from local Room data
-- Android notification channels for budget alerts, transactions, goals, and summaries
-- large-transaction alerts based on a configurable LKR threshold
-- monthly budget alerts when spending crosses the configured limit
-- recurring-expense auto-log notifications
-- goal milestone and goal-deadline reminders
-- daily spending summary reminders and weekly financial report notifications
-- notification preferences stored locally, including enable/disable toggle, daily reminder time, budget threshold, and large-transaction threshold
-
-## Tech Stack
-
-### Core
-
-- Kotlin
-- Java 17
-- Android SDK 35
-- Minimum SDK 26
-
-### Android Libraries
-
-- Jetpack Compose
-- Material 3
-- Navigation Compose
-- Lifecycle ViewModel
-- Room
-- WorkManager
-- Google Play Services Auth
-
-### Backend / Cloud
-
-- Firebase Authentication
-- Cloud Firestore
-
-### Networking
-
-- Retrofit
-- Gson Converter
-
-### Dependency Injection
-
-- Koin
-
-## Project Architecture
-
-The codebase generally follows this application flow:
+This system utilizes an offline-first **MVVM (Model-View-ViewModel)** architectural pattern. Data persists locally in **Room** instantly to ensure instant UI response times and complete offline usability, while asynchronous background synchronizations push updates to **Google Cloud Firestore**.
 
 ```text
-Compose UI
-↓
-ViewModel
-↓
-Repository
-↓
-Room / Firestore / Remote API
-↓
-Background Workers where needed
+       ┌────────────────────────┐
+       │   Compose UI Screens   │
+       └───────────┬────────────┘
+                   │  (Observes StateFlow)
+                   ▼
+       ┌────────────────────────┐
+       │    ViewModel Layer     │
+       └───────────┬────────────┘
+                   │  (Orchestrates Data & DI)
+                   ▼
+       ┌────────────────────────┐
+       │    Repository Layer    │
+       └──────┬───────────┬─────┘
+              │           │
+              ▼ (Instant) ▼ (Async background sync)
+       ┌──────────┐   ┌───────────────┐
+       │ Local DB │   │  Cloud Sync   │
+       │  (Room)  │   │  (Firestore)  │
+       └──────────┘   └───────────────┘
 ```
 
-### Main Layers
+### The Income & Currency Conversion Engine
 
-#### UI Layer
+One of the application's most powerful components is the dynamic **Currency Conversion Engine**:
+* **Multi-Currency Support**: Users can enter transactions in **LKR**, **USD**, or **USDT**.
+* **Live Calculations**: Converted live into `LKR` using the Retrofit network service pointing to `https://open.er-api.com/`.
+* **Data Integrity**: Preserves the original entered amount, the source currency, and the precise exchange rate used.
+* **Normalized Metrics**: Stores a standardized `baseAmountLKR` in the database, ensuring all totals, balances, dashboard summaries, and financial reports remain completely accurate, stable, and unified.
 
-Located under:
+---
+
+## 🚀 Key Implemented Features
+
+### 1. Authentication & Security
+* **Flexible Registration & Login**: Leverages **Firebase Authentication** for email/password and federated Google Sign-In.
+* **Input Validation**: Responsive UI validation checks for email syntax, password complexity, and name fields.
+* **Password Recovery**: Integrated password reset email workflow.
+* **Profile Provisioning**: Automatic Firestore-backed user profile matching and configuration on first login.
+
+### 2. Smart Income & Expense Management
+* **Interactive Entries**: Intuitive screens for registering assets and spending.
+* **Income Attributes**: Currency conversion preview cards with live rates, loading indicator, and friendly error handlers.
+* **Category Tagging**: Income supports categories (`Salary`, `Freelance`, `Crypto`). Expenses are mapped to primary categories and subcategories for precise breakdown charts.
+* **Notes**: Supporting metadata comments for every transaction.
 
-- `app/src/main/java/com/example/pbd/ui/screens`
+### 3. Room-First Offline Architecture
+* **Immediate Persistence**: Newly created incomes/expenses write to Room instantly. The form closes with a success indicator immediately—never blocking on remote networks.
+* **Background Sync**: Launches an asynchronous transaction upload task to Firestore in a detached background coroutine.
+* **Reliable Retry Logic**: When connection fails, the transaction is marked with `isSynced = false`. A periodic `SyncWorker` retries syncing only when network constraints are satisfied.
 
-Contains:
+### 4. Dynamic Dashboard & Transaction History
+* **Local-First Totals**: Calculations read from Room data to guarantee that newly saved local records appear instantly without waiting for cloud synchronization.
+* **Rich Component Layouts**: Includes Balance cards, goals breakdown cards, spending overview summaries, and active progress gauges.
+* **Complete Financial History**: Displays a fully unified history of both incomes and expenses, sorted newest-first, with built-in swipe-to-delete support and on-the-fly item updates.
 
-- Compose screens
-- local UI interaction logic
-- state collection from ViewModels
-
-#### ViewModel Layer
-
-Handles:
-
-- screen state
-- validation
-- user-driven events
-- orchestration between UI and repositories
-
-Key ViewModels include:
-
-- `AuthViewModel`
-- `IncomeViewModel`
-- `ExpenseViewModel`
-- `DashboardViewModel`
-- `ProfileViewModel`
-- `GoalDetailViewModel`
-- `TransactionHistoryViewModel`
-
-#### Repository Layer
-
-Located under:
-
-- `app/src/main/java/com/example/pbd/data/repository`
-
-Responsible for:
-
-- Room operations
-- Firestore reads and writes
-- exchange-rate requests
-- transaction sync behavior
-
-Key repositories:
-
-- `AuthRepository`
-- `FinanceRepository`
-- `DashboardRepository`
-- `GoalRepository`
-
-#### Local Data Layer
-
-Located under:
-
-- `app/src/main/java/com/example/pbd/data/local`
-
-Contains:
-
-- Room database setup
-- DAOs
-- Room type converters
-
-Main persisted entities:
-
-- `Transaction`
-- `RecurringExpense`
-- `NotificationEntity`
-
-#### Remote / Worker Layer
-
-Contains:
-
-- Retrofit exchange-rate API integration
-- `SyncWorker` for unsynced transactions
-- `RecurringExpenseWorker` for scheduled recurring expense processing
-- `GoalDeadlineWorker` for goal deadline reminders
-- `WeeklyReportWorker` for weekly summary notifications
-- notification receivers/helpers for daily reminders and notification channels
-
-## Important Data Models
-
-### Transaction
-
-The central financial record model. It stores:
-
-- `id`
-- `userId`
-- `type`
-- `amount`
-- `currency`
-- `exchangeRate`
-- `baseAmountLKR`
-- `category`
-- `subCategory`
-- `note`
-- `timestamp`
-- `isSynced`
-
-`baseAmountLKR` is the normalized value used for totals, dashboard balance, and reporting.
-
-### RecurringExpense
-
-Stores recurring expense templates for later automatic logging through WorkManager.
-
-### NotificationEntity
-
-Stores notifications shown in the in-app Notification Center so users can review alerts even after dismissing Android system notifications.
-
-### User
-
-Represents the authenticated user profile stored in Firestore.
-
-### Goal
-
-Represents a user savings goal with progress and deadline tracking.
-
-## Income & Currency Flow
-
-The implemented income flow works like this:
-
-```text
-User opens Add Income screen
-↓
-Enters amount and chooses currency
-↓
-UI requests live exchange rate
-↓
-IncomeViewModel resolves conversion
-↓
-Preview shows converted LKR value
-↓
-User saves income
-↓
-FinanceRepository saves transaction to Room first
-↓
-Repository pushes transaction to Firestore in background
-↓
-SyncWorker retries later if Firestore upload fails
-↓
-Dashboard uses baseAmountLKR for total balance
-```
-
-This design keeps the app responsive and allows newly added income to appear in dashboard totals immediately.
-
-## Current Navigation
-
-Registered app routes include:
-
-- splash
-- home
-- login
-- register
-- profile
-- add income
-- add expense
-- dashboard
-- transaction history
-- goal detail
-- notification center
-
-## Project Structure
-
-```text
-app/
-  src/main/java/com/example/pbd/
-    data/
-      local/
-      model/
-      notification/
-      remote/
-      repository/
-      worker/
-    di/
-    navigation/
-    ui/
-      screens/
-      theme/
-docs/
-```
-
-## Setup Instructions
-
-### Prerequisites
-
-- Android Studio with current Android SDK support
-- JDK 17
-- Gradle support through the included wrapper
-- Firebase project configured for:
-  - Authentication
-  - Cloud Firestore
-
-### Firebase Configuration
-
-This app expects Firebase services to be available through Android Firebase setup.
-
-Required:
-
-1. Create a Firebase project
-2. Register the Android app package
-3. Enable Firebase Authentication
-4. Enable Email/Password and Google sign-in providers
-5. Enable Cloud Firestore
-6. Place the Firebase config file in:
-
-```text
-app/google-services.json
-```
-
-### Clone and Run
-
-```bash
-git clone <your-repository-url>
-cd Personal-Finance-Management-System
-./gradlew assembleDebug
-```
-
-To install from Android Studio:
-
-1. Open the project
-2. Let Gradle sync complete
-3. Run on an emulator or Android device
-
-## Useful Commands
-
-Build debug sources:
-
+### 5. Automated Recurring Expenses
+* **Template Scheduling**: Define local templates for fixed, predictable recurring monthly overheads.
+* **Background Automation**: A daily runner processes pending templates, auto-logs due transactions, and triggers system notifications.
+
+### 6. Goal Tracking
+* **Firestore Goals Engine**: Establish savings goals, calculate progress percentages, and estimate remaining monthly targets to stay on track.
+* **Milestone Alerts**: Celebration popups and alerts are triggered at `25%`, `50%`, `75%`, and `100%` goal completion milestones.
+
+### 7. Notification System & Preferences
+* **Notification Center**: In-app persisted feed with category icons (Milestones, Alerts, Reports) to review historical warnings even after dismissing system notifications.
+* **Budget Limits**: Configurable local budget threshold that triggers system-level warnings when monthly spending approaches or exceeds the limit.
+* **Large Transaction Alerts**: Flags individual expenses exceeding a configurable limit.
+* **Local Preferences**: A specialized Shared Preferences wrapper stores toggles, custom limits, and scheduled daily summary notification times.
+
+---
+
+## 💾 Room Database Schema Evolution
+
+The local database (`finance_database`) contains three active entities: `Transaction`, `RecurringExpense`, and `NotificationEntity`. The Room Database (`AppDatabase.kt`) implements the following version history:
+
+* **v1**: Initial local SQLite structure for basic financial records.
+* **v2**: Added `exchangeRate` and `baseAmountLKR` columns to enable the unified multi-currency conversion pipeline.
+* **v3**: Added `subCategory` to `Transaction` to improve UI reporting and transaction list grouping.
+* **v4**: Added the `recurring_expenses` table to support template automation.
+* **v5**: Added the `notifications` table to support the persistent in-app Notification Center history.
+
+> [!NOTE]
+> During active development, the database uses `fallbackToDestructiveMigration()` to simplify schema additions. For production deployment, standard migrations will replace the destructive strategy.
+
+---
+
+## 🛠️ Tech Stack & Version Specifications
+
+Sourced directly from `gradle/libs.versions.toml`:
+
+### Core Environment
+* **Language**: Kotlin `1.9.22`
+* **Java Virtual Machine**: Java 17
+* **Android SDK**: Compile SDK `35`, Target SDK `35`, Min SDK `26`
+* **Build System**: Android Gradle Plugin `8.13.2` with KSP `1.9.22-1.0.17`
+
+### Jetpack Compose & UI
+* **Jetpack Compose BOM**: `2024.04.01`
+* **Material Design**: Material 3
+* **Navigation**: Navigation Compose `2.7.7`
+* **Icons**: Google Material Icons Extended
+
+### Persistence & Backend
+* **Local Database**: Room DB `2.6.1`
+* **Dependency Injection**: Koin `3.5.3` (with `koin-android` and `koin-androidx-compose`)
+* **Cloud Infrastructure**: Firebase BOM `32.8.0` (utilizing `firebase-auth-ktx` and `firebase-firestore-ktx`)
+* **Task Scheduling**: WorkManager `2.9.0`
+* **Network Client**: Retrofit `2.11.0` (with Gson Converter)
+
+---
+
+## ⚙️ Dependency Injection & App Wiring
+
+The application relies on **Koin** for modern, lightweight, and structured dependency injection. The entire dependency map is registered under `di/AppModule.kt` and initialized once inside `PbdApplication.onCreate()`.
+
+### Modular Architecture Mapping
+
+#### 📂 User Interface (`ui/screens`)
+Individual screens register distinct, focused ViewModels that consume domain logic cleanly:
+* `auth`: `AuthViewModel`
+* `profile`: `ProfileViewModel`
+* `dashboard`: `DashboardViewModel`
+* `income`: `IncomeViewModel`
+* `expense`: `ExpenseViewModel`
+* `transactions`: `TransactionHistoryViewModel` *(DI constructors fully wired)*
+* `goal`: `GoalDetailViewModel`
+* `notifications`: `NotificationViewModel`
+
+#### 📂 Domain Repositories (`data/repository`)
+* `AuthRepository`: Encapsulates user registration, email validation, Google Sign-In, and profile persistence.
+* `FinanceRepository`: Manages SQLite Room transaction operations, handles network rate conversions, and routes asynchronous cloud sync.
+* `DashboardRepository`: Reads goal calculations and profile analytics.
+* `GoalRepository`: Drives savings goals updates, performs atomic transactions, and registers milestones.
+* `NotificationRepository`: Manages persisted local Notification center entities.
+
+---
+
+## ⏳ Background Workers & Automation
+
+The application enqueues background routines using **WorkManager** to handle network constraints and background execution safely:
+
+| Worker Name | Trigger Frequency | Network Constraint | Core Responsibility |
+|:---|:---|:---|:---|
+| **`SyncWorker`** | Every 15 Minutes | **`CONNECTED`** | Queries Room for records with `isSynced = false` and uploads them to Firestore. Marks local records synced on success. |
+| **`RecurringExpenseWorker`** | Every 12 Hours | None | Scans active recurring templates, logs due expenses in Room, and issues reminder notifications. |
+| **`WeeklyReportWorker`** | Every 7 Days | None | Computes a financial summary for the week (Total Income vs Total Expenses) and posts a progress summary. |
+| **`GoalDeadlineWorker`** | Every 24 Hours | None | Assesses active savings goal deadlines and fires system warnings as target dates approach. |
+
+---
+
+## 📲 Setup & Build Instructions
+
+### 1. Firebase Configuration
+The system requires a connected Google Firebase project to support Authentication and Firestore:
+1. Create a project in the [Firebase Console](https://console.firebase.google.com).
+2. Register an Android Application with the package name `com.example.pbd`.
+3. Enable **Email/Password** and **Google** providers in the Firebase Authentication settings.
+4. Enable **Cloud Firestore** in test mode or with the provided security rules (`firestore.rules`).
+5. Download the configuration file `google-services.json` and place it in the app module directory:
+   ```text
+   app/google-services.json
+   ```
+
+### 2. Local Environment Requirements
+* Android Studio (Koala or newer recommended)
+* Android SDK 35 tools installed
+* JDK 17 configured in Android Studio settings
+
+### 3. Build & Run from Command Line
+Compile debug sources:
 ```bash
 ./gradlew compileDebugSources
 ```
 
-Run tests:
-
+Run local unit tests:
 ```bash
 ./gradlew test
 ```
 
-Build APK:
-
+Assemble debug APK:
 ```bash
 ./gradlew assembleDebug
 ```
+The resulting package will be generated under:
+`app/build/outputs/apk/debug/app-debug.apk`
 
-The debug APK is generated at:
+---
 
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
+## 📈 Technical Development Status
 
-## Current Status
+### Active Implementations
+* **Robust Offline-First Engine**: Local inputs are available immediately; background networks handle cloud synchronization transparently.
+* **Unified Koin DI Wiring**: Clean modular separation across all screens and ViewModels.
+* **Comprehensive Notification Pipelines**: Android channels for budget ceilings, recurring events, weekly reporting, and goal achievements.
+* **Unified Currency Flow**: Transparent handling of foreign currencies utilizing dynamic online rates with LKR standardization.
 
-Implemented and working in the repository today:
+### Known Limitations & Roadmap
+* **Exchange Rate Caching**: Remote exchange rates are not cached locally, meaning offline users cannot preview conversion cards for foreign currencies (though they can still log transactions in LKR).
+* **Granular Sync Status Indicator**: Sync completes silently in the background; a visible sync indicator will be added to the UI in future iterations.
+* **Schema Migration Strategy**: Destructive room schema replacements will be updated to standard SQLite migration paths in final release versions.
 
-- authentication flow
-- Google Sign-In
-- password reset email flow
-- auth input validation
-- profile loading
-- income entry with currency conversion
-- expense entry
-- recurring expense scheduling
-- notification center, daily reminders, weekly reports, budget alerts, large-transaction alerts, recurring-expense alerts, and goal reminders
-- Room-based transaction persistence
-- Firestore background sync
-- dashboard totals and recent transaction summaries
-- goal retrieval and goal detail calculations
-- transaction history for both income and expense
+---
 
-Current limitations / future improvements:
+## 📚 Internal Documentation References
 
-- exchange-rate responses are not cached locally
-- Firestore sync completion is not surfaced to the user as a separate sync status
-- Room currently uses destructive migration fallback during development
-- instrumentation and unit test coverage is still minimal
+Additional development documentation is available in the `docs` folder:
+* **[Flow Architecture](file:///c:/Users/Naveeth/Documents/GitHub/Personal-Finance-Management-System/docs/flow.md)**: Deep dive into the Room + Firestore synchronization contract and state management.
+* **[Income Feature Guide](file:///c:/Users/Naveeth/Documents/GitHub/Personal-Finance-Management-System/docs/add-income-feature.md)**: Exhaustive walkthrough of the multi-currency conversion preview and persistence flow.
+* **[Feature Documentation](file:///c:/Users/Naveeth/Documents/GitHub/Personal-Finance-Management-System/docs/feature.doc)**: Structural outline of the core database schema and UI controllers.
+* **[Firestore Security Contract](file:///c:/Users/Naveeth/Documents/GitHub/Personal-Finance-Management-System/firestore.rules)**: Active security policies and user-scoping rules for Cloud database access.
 
-## Documentation
+---
 
-Additional internal project notes are available in:
-
-- [docs/add-income-feature.md](docs/add-income-feature.md)
-- [docs/flow.md](docs/flow.md)
-- [docs/feature.doc](docs/feature.doc)
-
-Firestore security rules are available in:
-
-- [firestore.rules](firestore.rules)
-
-## Build Configuration
-
-Current project configuration:
-
-- `compileSdk = 35`
-- `targetSdk = 35`
-- `minSdk = 26`
-- `versionCode = 1`
-- `versionName = 1.0`
-
-## License
+## 📄 License
 
 No license file is currently included in this repository. Add one if the project is intended for public distribution or reuse.
