@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -61,9 +62,9 @@ val expenseSubCategories = listOf(
 // ─────────────────────────────────────────────────────────────────────────────
 // Colour palette (dark theme matching the mockup)
 // ─────────────────────────────────────────────────────────────────────────────
-private val DarkBackground = Color(0xFF1C1C2E)
-private val DarkCard       = Color(0xFF2A2A3E)
-private val DarkBorder     = Color(0xFF3A3A4E)
+private val DarkBackground = Color(0xFF0D0F1A)
+private val DarkCard       = Color(0xFF161929)
+private val DarkBorder     = Color(0xFF212437)
 private val LabelGray      = Color(0xFF9E9E9E)
 private val WhiteText      = Color(0xFFFFFFFF)
 private val GradientStart  = Color(0xFF7B61FF)   // purple
@@ -126,56 +127,66 @@ fun AddExpenseScreen(
         }
     }
 
+    val statusBarHeightDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp)
-        ) {
-
-            // ── Header ────────────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ── Fixed Toolbar Header ───────────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = statusBarHeightDp + 16.dp, bottom = 12.dp)
             ) {
-                Column {
-                    Text(
-                        text = "Add New",
-                        color = LabelGray,
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = "Expense",
-                        color = WhiteText,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                // Close / back button
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(DarkCard)
-                        .clickable { navController.popBackStack() },
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = WhiteText,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(DarkCard)
+                            .clickable { navController.popBackStack() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = WhiteText,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Add New",
+                            color = LabelGray,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = "Expense",
+                            color = WhiteText,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            // ── Scrollable Content Area ───────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp)
+            ) {
 
             // ── Amount Field ──────────────────────────────────────────────
             Text(text = "Amount", color = LabelGray, fontSize = 14.sp)
@@ -602,6 +613,7 @@ fun AddExpenseScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
@@ -639,16 +651,31 @@ fun CategoryGrid(
 // ─────────────────────────────────────────────────────────────────────────────
 // Single Category Item — icon circle + label underneath
 // ─────────────────────────────────────────────────────────────────────────────
+private fun getCategoryColor(subCategory: String): Color {
+    return when (subCategory.lowercase(java.util.Locale.getDefault())) {
+        "shopping"      -> Color(0xFF7B61FF) // Purple
+        "transport"     -> Color(0xFF00B4D8) // Blue/Cyan
+        "food"          -> Color(0xFFFF9800) // Orange
+        "entertainment" -> Color(0xFF4CAF50) // Green
+        "home"          -> Color(0xFFFFEB3B) // Yellow
+        "bills"         -> Color(0xFFE91E63) // Pink/Red
+        "coffee"        -> Color(0xFF8D6E63) // Brown
+        "gifts"         -> Color(0xFFAB47BC) // Lavender
+        "health"        -> Color(0xFF26A69A) // Teal
+        else            -> Color(0xFF7B61FF) // Default
+    }
+}
+
 @Composable
 fun CategoryItem(
     subCategory: ExpenseSubCategory,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    // Purple highlight when selected, dark card otherwise
-    val bgColor   = if (isSelected) GradientStart else DarkCard
+    val activeColor = getCategoryColor(subCategory.label)
+    val bgColor   = if (isSelected) activeColor else DarkCard
     val iconTint  = if (isSelected) WhiteText else LabelGray
-    val textColor = if (isSelected) WhiteText else LabelGray
+    val textColor = if (isSelected) activeColor else LabelGray
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

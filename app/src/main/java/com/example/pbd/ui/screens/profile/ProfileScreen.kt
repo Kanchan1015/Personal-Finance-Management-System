@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -55,7 +57,7 @@ fun ProfileScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = TextPrimary
                         )
@@ -447,7 +449,7 @@ fun ProfileScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = ExpenseRed.copy(alpha = 0.85f))
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ExitToApp,
+                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                 contentDescription = "Logout",
                                 modifier = Modifier.size(18.dp)
                                 

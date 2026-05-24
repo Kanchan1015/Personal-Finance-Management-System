@@ -52,7 +52,8 @@ fun BalanceCard(
             Spacer(modifier = Modifier.height(20.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(32.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IncomeExpenseItem(
                     label = "Income",

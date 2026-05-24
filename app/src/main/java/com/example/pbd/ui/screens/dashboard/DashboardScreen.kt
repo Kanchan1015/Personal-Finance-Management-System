@@ -5,7 +5,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,28 +31,81 @@ fun DashboardScreen(
 
     if (uiState.isLoading) {
         Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = androidx.compose.ui.Alignment.Center
+            modifier = Modifier.fillMaxSize().background(DarkBackground),
+            contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(color = AccentPurple)
         }
         return
     }
 
-    Column(
+    val statusBarHeightDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .statusBarsPadding()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .background(DarkBackground)
     ) {
-        // Balance card
-        BalanceCard(
-            totalBalance = uiState.netBalance,
-            totalIncome = uiState.totalIncome,
-            totalExpenses = uiState.totalExpenses
-        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ── Fixed Toolbar Header ───────────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = statusBarHeightDp + 16.dp, bottom = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(DarkCard)
+                            .clickable { navController.popBackStack() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Analytics",
+                            color = TextSecondary,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = "Financial Insights",
+                            color = TextPrimary,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // ── Scrollable Content Area ───────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Balance card
+                BalanceCard(
+                    totalBalance = uiState.netBalance,
+                    totalIncome = uiState.totalIncome,
+                    totalExpenses = uiState.totalExpenses
+                )
 
         // Goal card
         uiState.activeGoal?.let { goal ->
@@ -57,11 +117,32 @@ fun DashboardScreen(
             )
         }
 
+        // Income overview
+        if (uiState.incomeBreakdown.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Income Overview",
+                    color = TextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                TextButton(onClick = { navController.navigate(Screen.TransactionHistory.createRoute("income")) }) {
+                    Text(text = "Details", color = AccentPurple, fontSize = 12.sp)
+                }
+            }
+            IncomeOverview(incomeBreakdown = uiState.incomeBreakdown)
+        }
+
         // Spending overview
         if (uiState.categoryBreakdown.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Spending Overview",
@@ -69,7 +150,7 @@ fun DashboardScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-                TextButton(onClick = { }) {
+                TextButton(onClick = { navController.navigate(Screen.TransactionHistory.createRoute("expense")) }) {
                     Text(text = "Details", color = AccentPurple, fontSize = 12.sp)
                 }
             }
@@ -80,7 +161,8 @@ fun DashboardScreen(
         if (uiState.categoryBreakdown.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Top Spending",
@@ -88,7 +170,7 @@ fun DashboardScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-                TextButton(onClick = { }) {
+                TextButton(onClick = { navController.navigate(Screen.TransactionHistory.createRoute("expense")) }) {
                     Text(text = "View All", color = AccentPurple, fontSize = 12.sp)
                 }
             }
@@ -99,7 +181,8 @@ fun DashboardScreen(
         if (uiState.recentTransactions.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Recent Transactions",
@@ -107,7 +190,7 @@ fun DashboardScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-                TextButton(onClick = { navController.navigate("transaction_history") }) {
+                TextButton(onClick = { navController.navigate(Screen.TransactionHistory.createRoute("all")) }) {
                     Text(text = "See All", color = AccentPurple, fontSize = 12.sp)
                 }
             }
@@ -115,5 +198,7 @@ fun DashboardScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
     }
 }

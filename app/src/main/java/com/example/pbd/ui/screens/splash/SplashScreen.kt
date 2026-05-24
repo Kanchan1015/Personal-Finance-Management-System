@@ -3,6 +3,7 @@ package com.example.pbd.ui.screens.splash
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -92,38 +94,13 @@ fun SplashScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo icon box
-            Box(
+            // Premium 3D Logo Image
+            Image(
+                painter = painterResource(id = com.example.pbd.R.drawable.ic_logo),
+                contentDescription = "FinanceTrack Logo",
                 modifier = Modifier
-                    .size(88.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(LogoGradient),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "₹",
-                    color = Color.White,
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // App name
-            Text(
-                text = "FinanceTrack",
-                color = TextPrimary,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Your personal budget, simplified",
-                color = TextSecondary,
-                fontSize = 13.sp
+                    .size(300.dp)
+                    .clip(RoundedCornerShape(56.dp))
             )
 
             Spacer(modifier = Modifier.height(48.dp))

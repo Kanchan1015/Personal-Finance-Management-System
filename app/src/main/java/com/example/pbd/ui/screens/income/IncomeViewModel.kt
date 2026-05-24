@@ -129,7 +129,8 @@ class IncomeViewModel(
     fun saveIncome(
         amount: Double,
         currency: String,
-        category: TransactionCategory
+        category: TransactionCategory,
+        subCategory: String = ""
     ) {
         if (amount <= 0.0) {
             _uiState.value = _uiState.value.copy(
@@ -183,7 +184,8 @@ class IncomeViewModel(
                     currency = currency,
                     exchangeRate = resolvedExchangeRate,
                     baseAmountLKR = resolvedBaseAmountLKR,
-                    category = category
+                    category = category,
+                    subCategory = subCategory
                 )
 
                 repository.saveIncome(incomeTransaction)
