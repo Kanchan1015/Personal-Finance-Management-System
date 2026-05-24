@@ -15,6 +15,12 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
     fun getAllTransactions(): Flow<List<Transaction>>
 
+    // Returns a live stream of transactions for a specific user, ordered newest-first.
+    // Used by the dashboard to calculate balances from Room immediately after saving,
+    // without waiting for Firestore sync to complete.
+    @Query("SELECT * FROM transactions WHERE userId = :userId ORDER BY timestamp DESC")
+    fun getTransactionsByUser(userId: String): Flow<List<Transaction>>
+
     @Query("SELECT * FROM transactions WHERE isSynced = 0")
     suspend fun getUnsyncedTransactions(): List<Transaction>
 
