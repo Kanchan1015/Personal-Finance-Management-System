@@ -32,6 +32,12 @@ class FinanceRepository(
     // Exposes a live stream of all transactions from Room
     val allTransactions: Flow<List<Transaction>> = transactionDao.getAllTransactions()
 
+    // Exposes a live, user-scoped stream from Room.
+    // The dashboard uses this so income appears immediately after saving locally,
+    // without waiting for the background Firestore push to complete.
+    fun getTransactionsByUser(userId: String): Flow<List<Transaction>> =
+        transactionDao.getTransactionsByUser(userId)
+
     // saveIncome delegates to saveTransaction (offline-first: Room first, then Firestore)
     suspend fun saveIncome(transaction: Transaction): Result<Unit> {
         return try {

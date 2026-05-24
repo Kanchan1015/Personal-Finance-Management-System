@@ -6,6 +6,8 @@ import com.example.pbd.data.model.Goal
 import com.example.pbd.data.model.Transaction
 import com.example.pbd.data.model.TransactionType
 import com.example.pbd.data.repository.DashboardRepository
+import com.example.pbd.data.repository.FinanceRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +26,11 @@ data class DashboardUiState(
     val userName: String = "User"
 )
 
-class DashboardViewModel(private val repository: DashboardRepository) : ViewModel() {
+class DashboardViewModel(
+    private val dashboardRepository: DashboardRepository,
+    private val financeRepository: FinanceRepository,
+    private val auth: FirebaseAuth
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -37,14 +43,19 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            val name = repository.getUserName()
+            val name = dashboardRepository.getUserName()
             _uiState.value = _uiState.value.copy(userName = name)
         }
     }
 
     private fun loadTransactions() {
         viewModelScope.launch {
-            repository.getTransactions().collect { transactions ->
+            // Use Room as the primary source of truth for transaction data.
+            // This ensures income and expenses appear on the dashboard immediately
+            // after being saved locally — without waiting for the async Firestore push.
+            val userId = auth.currentUser?.uid ?: return@launch
+
+            financeRepository.getTransactionsByUser(userId).collect { transactions ->
 
                 val income = transactions
                     .filter { it.type == TransactionType.INCOME }
@@ -77,7 +88,7 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
 
     private fun loadGoals() {
         viewModelScope.launch {
-            repository.getGoals().collect { goals ->
+            dashboardRepository.getGoals().collect { goals ->
                 val activeGoal = goals.firstOrNull()
                 val progress = if (activeGoal != null && activeGoal.targetAmount > 0) {
                     (activeGoal.currentSaved / activeGoal.targetAmount).toFloat()

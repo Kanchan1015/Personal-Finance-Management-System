@@ -39,6 +39,6 @@ val appModule = module {
     viewModel { ProfileViewModel(get()) }
     viewModel { IncomeViewModel(get(), get()) }
     viewModel { ExpenseViewModel(get(), get()) }
-    viewModel { DashboardViewModel(get()) }
+    viewModel { DashboardViewModel(get(), get(), get()) }
     viewModel { GoalDetailViewModel(get()) }
 }

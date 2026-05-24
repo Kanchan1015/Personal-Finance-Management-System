@@ -10,7 +10,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.filled.*
+import com.example.pbd.data.model.TransactionType
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -88,9 +91,12 @@ fun TransactionHistoryScreen(
         }
     }
 
-    // Calculate total spending for filtered list
-    val totalSpending = remember(filteredTransactions) {
-        filteredTransactions.sumOf { it.baseAmountLKR }
+    // Calculate total income and expenses for the filtered list
+    val totalIncome = remember(filteredTransactions) {
+        filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.baseAmountLKR }
+    }
+    val totalExpenses = remember(filteredTransactions) {
+        filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.baseAmountLKR }
     }
 
     Box(
@@ -110,9 +116,10 @@ fun TransactionHistoryScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Gradient Total Expenses Card ─────────────────────────────────
-            TotalExpensesCard(
-                amount = totalSpending,
+            // ── Gradient Summary Card ────────────────────────────────────────
+            TotalSummaryCard(
+                totalIncome = totalIncome,
+                totalExpenses = totalExpenses,
                 count = filteredTransactions.size
             )
 
@@ -143,7 +150,7 @@ fun TransactionHistoryScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "No expenses recorded",
+                            text = "No transactions recorded",
                             color = TextSecondary,
                             fontSize = 15.sp
                         )
@@ -193,7 +200,7 @@ private fun HeaderRow(onBackClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = TextWhite,
                     modifier = Modifier.size(18.dp)
@@ -234,7 +241,7 @@ private fun HeaderRow(onBackClick: () -> Unit) {
 }
 
 @Composable
-private fun TotalExpensesCard(amount: Double, count: Int) {
+private fun TotalSummaryCard(totalIncome: Double, totalExpenses: Double, count: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -245,27 +252,43 @@ private fun TotalExpensesCard(amount: Double, count: Int) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.TrendingDown,
-                    contentDescription = "Trending Down",
+                    imageVector = Icons.AutoMirrored.Filled.TrendingDown,
+                    contentDescription = "Transactions",
                     tint = TextWhite.copy(alpha = 0.9f),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Total Expenses",
+                    text = "Transaction Summary",
                     color = TextWhite.copy(alpha = 0.85f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))
+            // Net balance = income - expenses
             Text(
-                text = "LKR %,.0f".format(amount),
+                text = "LKR %,.0f".format(totalIncome - totalExpenses),
                 color = TextWhite,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Text(
+                    text = "+LKR %,.0f  Income".format(totalIncome),
+                    color = Color(0xFF4CAF50),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "-LKR %,.0f  Expenses".format(totalExpenses),
+                    color = Color(0xFFFF6B6B),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "$count transactions",
                 color = TextWhite.copy(alpha = 0.75f),
@@ -411,10 +434,11 @@ private fun TransactionListItem(transaction: Transaction) {
             }
         }
 
-        // Amount Label
+        // Amount Label — green +LKR for income, red -LKR for expenses
+        val isIncome = transaction.type == TransactionType.INCOME
         Text(
-            text = "-LKR %,.0f".format(transaction.baseAmountLKR),
-            color = TextWhite,
+            text = "%sLKR %,.0f".format(if (isIncome) "+" else "-", transaction.baseAmountLKR),
+            color = if (isIncome) Color(0xFF4CAF50) else Color(0xFFFF6B6B),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
