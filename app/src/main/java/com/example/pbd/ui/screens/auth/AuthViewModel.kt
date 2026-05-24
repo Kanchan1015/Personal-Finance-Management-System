@@ -53,6 +53,21 @@ class AuthViewModel(
         }
     }
 
+    fun signInWithGoogle(idToken: String) {
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            val result = authRepository.signInWithGoogle(idToken)
+            result.fold(
+                onSuccess = { user -> _authState.value = AuthState.Success(user) },
+                onFailure = { e ->
+                    _authState.value = AuthState.Error(
+                        e.message ?: "Unable to sign in with Google"
+                    )
+                }
+            )
+        }
+    }
+
     fun sendPasswordResetEmail(email: String) {
         val trimmedEmail = email.trim()
         if (trimmedEmail.isEmpty()) {

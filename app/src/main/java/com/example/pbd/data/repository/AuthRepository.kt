@@ -2,12 +2,15 @@ package com.example.pbd.data.repository
 
 import com.example.pbd.data.model.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
 interface AuthRepository {
     suspend fun login(email: String, password: String): Result<User>
     suspend fun register(name: String, email: String, password: String): Result<User>
+    suspend fun signInWithGoogle(idToken: String): Result<User>
     suspend fun sendPasswordResetEmail(email: String): Result<Unit>
     suspend fun getUserProfile(userId: String): Result<User>
     fun getCurrentUserId(): String?
@@ -58,6 +61,39 @@ class AuthRepositoryImpl(
             usersCollection.document(userId).set(newUser).await()
 
             Result.success(newUser)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<User> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val firebaseUser = authResult.user ?: throw Exception("User is null after Google sign-in")
+            val userId = firebaseUser.uid
+            val userDocument = usersCollection.document(userId).get().await()
+
+            val user = if (userDocument.exists()) {
+                val existingUser = userDocument.toObject(User::class.java) ?: User(id = userId)
+                existingUser.copy(
+                    id = userId,
+                    name = existingUser.name.ifBlank { firebaseUser.displayName.orEmpty() },
+                    email = existingUser.email.ifBlank { firebaseUser.email.orEmpty() }
+                )
+            } else {
+                User(
+                    id = userId,
+                    name = firebaseUser.displayName ?: "Google User",
+                    email = firebaseUser.email.orEmpty(),
+                    baseCurrency = "LKR",
+                    totalBalanceLKR = 0.0
+                )
+            }
+
+            usersCollection.document(userId).set(user, SetOptions.merge()).await()
+
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
